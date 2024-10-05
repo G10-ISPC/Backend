@@ -1,9 +1,11 @@
 from django.db import models
-from django.conf import settings
+# from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
-from rest_framework.authtoken.models import Token
-from django.db.models.signals import post_save
-from django.dispatch import receiver
+# Elimina la importación de Token ya que no lo usarás
+# from rest_framework.authtoken.models import Token
+# from django.db.models.signals import post_save
+# from django.dispatch import receiver
+
 # Modelo de Producto
 class Producto(models.Model):
     id_producto = models.AutoField(primary_key=True)
@@ -79,25 +81,7 @@ class CustomUser(AbstractUser):
         return self.email
 
 
-# Crear el token automáticamente cuando se crea un usuario
-
-
-@receiver(post_save, sender=settings.AUTH_USER_MODEL)
-def create_auth_token(sender, instance=None, created=False, **kwargs):
-    """
-    Crea un token de autenticación para un nuevo usuario.
-
-    Esta función se ejecuta automáticamente cuando un nuevo usuario es creado
-    en el sistema (a través de la señal `post_save`). Si el usuario ha sido
-    recién creado (`created=True`), entonces se genera un token de autenticación
-    para dicho usuario.
-
-    Args:
-        sender: El modelo de usuario que envía la señal.
-        instance: La instancia del usuario recién creado.
-        created: Booleano que indica si el usuario fue creado (True si es un nuevo usuario).
-    """
-    if created:
-        Token.objects.create(user=instance)
-        
-        
+# @receiver(post_save, sender=settings.AUTH_USER_MODEL)
+# def create_auth_token(sender, instance=None, created=False, **kwargs):
+#     if created:
+#         Token.objects.create(user=instance)
