@@ -1,3 +1,4 @@
+from rest_framework import permissions
 from rest_framework import status, generics, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -9,7 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth import get_user_model
 from .serializers import (
-    RegistroSerializers, ProductoSerializer, DireccionSerializer
+    RegistroSerializers, ProductoSerializer, DireccionSerializer, UsuarioSerializer
 )
 from .models import Producto, Direccion
 
@@ -24,22 +25,25 @@ def obtener_tokens_para_usuario(usuario):
 
 
 # Clases de permisos personalizadas
-from rest_framework import permissions
+
 
 class IsAdmin(permissions.BasePermission):
     """Permiso que permite solo a los administradores acceder a la vista."""
+
     def has_permission(self, request, view):
         return request.user and request.user.rol == 'admin'
 
 
 class IsCliente(permissions.BasePermission):
     """Permiso que permite solo a los clientes acceder a la vista."""
+
     def has_permission(self, request, view):
         return request.user and request.user.rol == 'cliente'
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     """Permiso que permite a los administradores editar, mientras que los clientes solo pueden leer."""
+
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
             return True
@@ -56,10 +60,22 @@ class RegistroView(generics.CreateAPIView):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            tokens = obtener_tokens_para_usuario(user)
+
+            """ tokens = obtener_tokens_para_usuario(user) """
+            refresh = RefreshToken.for_user(user)
+
             return Response({
-                'tokens': tokens,
-                'user': serializer.data
+
+                """ 'tokens': tokens,
+                'user': serializer.data """
+
+                'tokens': {
+
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token)
+                },
+                'user': UsuarioSerializer(user).data
+
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -72,7 +88,7 @@ class LoginView(APIView):
     def post(self, request):
         email = request.data.get('email', None)
         password = request.data.get('password', None)
-        
+
         # Autenticar al usuario
         usuario = authenticate(request, username=email, password=password)
 
@@ -98,7 +114,8 @@ class LoginView(APIView):
 
 # Vista para Logout
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]  # Logout solo para usuarios autenticados
+    # Logout solo para usuarios autenticados
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         logout(request)
@@ -116,4 +133,5 @@ class ProductoViewSet(viewsets.ModelViewSet):
 class DireccionViewSet(viewsets.ModelViewSet):
     queryset = Direccion.objects.all()
     serializer_class = DireccionSerializer
-    permission_classes = [IsAuthenticated]  # Todos los usuarios autenticados pueden acceder
+    # Todos los usuarios autenticados pueden acceder
+    permission_classes = [IsAuthenticated]
