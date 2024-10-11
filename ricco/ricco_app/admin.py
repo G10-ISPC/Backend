@@ -10,17 +10,17 @@ from .models import Direccion
 class CustomUserAdmin(UserAdmin):
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        ('Personal info', {'fields': ('first_name', 'last_name', 'telefono', 'direccion')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'telefono', 'direccion', 'rol')}), #10/10
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'password1', 'password2'),
+            'fields': ('email', 'password1', 'password2', 'rol'), #agregue rol
         }),
     )
-    list_display = ('email', 'first_name', 'last_name', 'is_staff')
+    list_display = ('email', 'first_name', 'last_name', 'rol','is_staff') #10/10 agregue rol
     search_fields = ('email', 'first_name', 'last_name')
     ordering = ('email',)
 

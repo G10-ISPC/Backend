@@ -13,6 +13,7 @@ from .serializers import (
     RegistroSerializers, ProductoSerializer, DireccionSerializer, UsuarioSerializer
 )
 from .models import Producto, Direccion
+from .serializers import CustomTokenObtainPairSerializer
 
 
 # Función para crear tokens JWT
@@ -21,6 +22,7 @@ def obtener_tokens_para_usuario(usuario):
     return {
         'refresh': str(refresh),
         'access': str(refresh.access_token),
+        'rol': 'admin' if usuario.is_superuser else 'cliente'  # Cambiado a 'rol' 10/10
     }
 
 
@@ -84,10 +86,11 @@ class RegistroView(generics.CreateAPIView):
 class LoginView(APIView):
     permission_classes = [AllowAny]  # Login accesible para todos
 
-    @method_decorator(csrf_exempt)
+    ##agregue hasta linea 93:
     def post(self, request):
-        email = request.data.get('email', None)
-        password = request.data.get('password', None)
+        serializer = CustomTokenObtainPairSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)  # Lanza un error si no es válido
+        return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
         # Autenticar al usuario
         usuario = authenticate(request, username=email, password=password)
@@ -102,7 +105,8 @@ class LoginView(APIView):
                     'email': usuario.email,
                     'first_name': usuario.first_name,
                     'last_name': usuario.last_name,
-                    'is_staff': usuario.is_staff
+                    'is_staff': usuario.is_staff,
+                    'rol': 'admin' if usuario.is_superuser else 'cliente'  # Cambiado a 'rol' 10/10
                 }
             }, status=status.HTTP_200_OK)
         else:
@@ -118,8 +122,8 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        logout(request)
-        return Response(status=status.HTTP_200_OK)
+        ##logout(request)
+        return Response({"message": "Logout exitoso"}, status=status.HTTP_200_OK) #09-10 agregado
 
 
 # Vista para el CRUD de Productos
