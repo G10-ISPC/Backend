@@ -4,6 +4,8 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 from .models import Producto, Direccion
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
+
 
 # Serializador de Usuario
 
@@ -15,7 +17,12 @@ class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
         fields = ('email', 'password', 'first_name',
-                  'last_name', 'telefono', 'is_staff')
+                  'last_name', 'telefono', 'is_staff', 'rol')
+    def create(self, validated_data):
+        user = super().create(validated_data)
+        user.rol = 'admin' if user.is_staff else 'cliente'  # Asigna el rol según el is_staff
+        user.save()
+        return user
 
 # Serializador de Dirección
 
@@ -42,7 +49,7 @@ class RegistroSerializers(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
         fields = ('email', 'password', 'password2', 'first_name',
-                  'last_name', 'telefono', 'direccion', 'is_staff')
+                  'last_name', 'telefono', 'direccion', 'is_staff', 'rol') #agregue campo rol 10/10
 
     def validate(self, attrs):
         # Validar que las contraseñas coincidan
@@ -67,6 +74,7 @@ class RegistroSerializers(serializers.ModelSerializer):
                 'is_staff', False),  # Manejo de is_staff
         )
         user.set_password(validated_data['password'])
+        user.rol = 'admin' if user.is_staff else 'cliente'  # Asigna rol 10/10
         user.save()
 
         # Generar tokens JWT para el usuario
@@ -105,9 +113,11 @@ class CustomTokenObtainPairSerializer(serializers.Serializer):
         user = get_user_model().objects.filter(email=email).first()
         if user and user.check_password(password):
             refresh = RefreshToken.for_user(user)
+            print(f"Rol obtenido: {user.rol}")  # Agrega este log
             return {
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
+                'rol': user.rol, #10/10
                 'user': UsuarioSerializer(user).data,
             }
 
@@ -120,3 +130,29 @@ class CustomTokenObtainPairSerializer(serializers.Serializer):
     def update(self, instance, validated_data):
         raise NotImplementedError(
             "Este método no es necesario para la actualización de tokens JWT.")
+
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+        user = authenticate(request=self.context.get('request'), email=email, password=password)
+
+        if user is None:
+            raise serializers.ValidationError("Credenciales inválidas")
+
+        attrs['user'] = user
+        return attrs
+
+    def create(self, validated_data):
+        user = validated_data['user']
+        refresh = RefreshToken.for_user(user)
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'rol': user.rol,
+            'user': UsuarioSerializer(user).data,
+        }
