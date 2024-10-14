@@ -4,16 +4,17 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import authenticate, login, logout
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import  logout
+from .serializers import LoginSerializer, UserProfileSerializer
+# from django.utils.decorators import method_decorator
+# from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth import get_user_model
 from .serializers import (
-    RegistroSerializers, ProductoSerializer, DireccionSerializer, UsuarioSerializer
+    RegistroSerializers, ProductoSerializer, DireccionSerializer
 )
 from .models import Producto, Direccion
-from .serializers import CustomTokenObtainPairSerializer
+# from .serializers import CustomTokenObtainPairSerializer
 
 
 # Función para crear tokens JWT
@@ -62,55 +63,61 @@ class RegistroView(generics.CreateAPIView):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-
-            """ tokens = obtener_tokens_para_usuario(user) """
-            refresh = RefreshToken.for_user(user)
-
+            tokens = obtener_tokens_para_usuario(user)
             return Response({
-
-                """ 'tokens': tokens,
-                'user': serializer.data """
-
-                'tokens': {
-
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token)
-                },
-                'user': UsuarioSerializer(user).data
-
+                'tokens': tokens,
+                'user': serializer.data
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # Vista para el Login de Usuarios
+# class LoginView(APIView):
+#     permission_classes = [AllowAny]  # Login accesible para todos
+
+#     def post(self, request):
+#         serializer = CustomTokenObtainPairSerializer(data=request.data)
+#         serializer.is_valid(raise_exception=True)  # Lanza un error si no es válido
+        
+#         # Obtén las credenciales del usuario
+#         email = serializer.validated_data.get('email')
+#         password = serializer.validated_data.get('password')
+        
+#         # Autenticar al usuario
+#         usuario = authenticate(request, username=email, password=password)
+
+#         if usuario:
+#             login(request, usuario)
+#             tokens = obtener_tokens_para_usuario(usuario)
+#             return Response({
+#                 'tokens': tokens,
+#                 'user': {
+#                     'id': usuario.id,
+#                     'email': usuario.email,
+#                     'first_name': usuario.first_name,
+#                     'last_name': usuario.last_name,
+#                     'is_staff': usuario.is_staff,
+#                     'rol': 'admin' if usuario.is_superuser else 'cliente'  # Cambiado a 'rol' 10/10
+#                 }
+#             }, status=status.HTTP_200_OK)
+#         else:
+#             return Response({'error': 'Credenciales incorrectas'}, status=status.HTTP_400_BAD_REQUEST)
+
+#     def get(self, request):
+#         return Response(data={'message': 'GET request processed successfully'})
+
+
 class LoginView(APIView):
     permission_classes = [AllowAny]  # Login accesible para todos
 
-    ##agregue hasta linea 93:
     def post(self, request):
-        serializer = CustomTokenObtainPairSerializer(data=request.data)
+        serializer = LoginSerializer(data=request.data)  # Cambiado a LoginSerializer
         serializer.is_valid(raise_exception=True)  # Lanza un error si no es válido
-        return Response(serializer.validated_data, status=status.HTTP_200_OK)
-
-        # Autenticar al usuario
-        usuario = authenticate(request, username=email, password=password)
-
-        if usuario:
-            login(request, usuario)
-            tokens = obtener_tokens_para_usuario(usuario)
-            return Response({
-                'tokens': tokens,
-                'user': {
-                    'id': usuario.id,
-                    'email': usuario.email,
-                    'first_name': usuario.first_name,
-                    'last_name': usuario.last_name,
-                    'is_staff': usuario.is_staff,
-                    'rol': 'admin' if usuario.is_superuser else 'cliente'  # Cambiado a 'rol' 10/10
-                }
-            }, status=status.HTTP_200_OK)
-        else:
-            return Response({'error': 'Credenciales incorrectas'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Utiliza el método create del serializer para obtener el usuario y los tokens
+        tokens_data = serializer.create(serializer.validated_data)
+        
+        return Response(tokens_data, status=status.HTTP_200_OK)
 
     def get(self, request):
         return Response(data={'message': 'GET request processed successfully'})
@@ -122,9 +129,9 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        ##logout(request)
-        return Response({"message": "Logout exitoso"}, status=status.HTTP_200_OK) #09-10 agregado
-
+        # Realiza el logout
+        logout(request)
+        return Response({"message": "Logout exitoso"}, status=status.HTTP_200_OK)
 
 # Vista para el CRUD de Productos
 class ProductoViewSet(viewsets.ModelViewSet):
@@ -139,3 +146,33 @@ class DireccionViewSet(viewsets.ModelViewSet):
     serializer_class = DireccionSerializer
     # Todos los usuarios autenticados pueden acceder
     permission_classes = [IsAuthenticated]
+
+
+class UserProfileView(generics.RetrieveUpdateDestroyAPIView):
+    """Vista para obtener, actualizar y eliminar el perfil de usuario."""
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserProfileSerializer
+
+    def get_object(self):
+        """Obtiene el usuario autenticado."""
+        return self.request.user
+
+    def get(self, request):
+        """Obtiene los datos del perfil del usuario."""
+        user = self.get_object()
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
+
+    def put(self, request):
+        """Actualiza los datos del perfil del usuario."""
+        user = self.get_object()
+        serializer = self.get_serializer(user, data=request.data, partial=True)  # partial=True permite actualizaciones parciales
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def delete(self, request):
+        """Elimina la cuenta del usuario."""
+        user = self.get_object()
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
