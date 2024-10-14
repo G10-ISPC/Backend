@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     LoginView, LogoutView, RegistroView, ProductoViewSet, 
-    DireccionViewSet
+    DireccionViewSet, UserProfileView
 )
 
 router = DefaultRouter()
@@ -19,7 +19,7 @@ urlpatterns = [
     path('login/', LoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('registro/', RegistroView.as_view(), name='registro'),
-
+    path('profile/', UserProfileView.as_view(), name='user-profile'),
     # Incluyendo las rutas del router para Productos y Direcciones
     path('', include(router.urls)),
 ]
