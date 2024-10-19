@@ -54,14 +54,6 @@ class CustomUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-        #if extra_fields.get('is_staff') is not True:
-         #   raise ValueError('Superuser debe tener is_staff=True.')
-        #if extra_fields.get('is_superuser') is not True:
-          #  raise ValueError('Superuser debe tener is_superuser=True.')
-
-        #return self.create_user(email, password=password, **extra_fields)
-
-
 # Modelo de Usuario Personalizado
 class CustomUser(AbstractUser):
     username = None  # Esto elimina el campo username

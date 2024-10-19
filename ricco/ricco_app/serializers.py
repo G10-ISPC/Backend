@@ -72,17 +72,7 @@ class RegistroSerializers(serializers.ModelSerializer):
         # Generar tokens JWT para el usuario
         refresh = RefreshToken.for_user(user)
 
-        # return user
-        return {
-            'user': UsuarioSerializer(user).data,
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-        }
-        # """ return {
-        #     'user': UsuarioSerializer(user).data,
-        #     'refresh': str(refresh),
-        #     'access': str(refresh.access_token),
-        # } """
+        return user
 
 # Serializador de Producto
 class ProductoSerializer(serializers.ModelSerializer):
@@ -124,36 +114,6 @@ class CustomTokenObtainPairSerializer(serializers.Serializer):
         raise NotImplementedError(
             "Este método no es necesario para la actualización de tokens JWT.")
 
-
-# class LoginSerializer(serializers.Serializer):
-#     """Serializer for handling user login."""
-#     email = serializers.EmailField()
-#     password = serializers.CharField(write_only=True)
-
-#     def validate(self, attrs):
-#         email = attrs.get('email')
-#         password = attrs.get('password')
-#         user = authenticate(request=self.context.get('request'), email=email, password=password)
-
-#         if user is None:
-#             raise serializers.ValidationError("Credenciales inválidas")
-
-#         attrs['user'] = user
-#         return attrs
-
-#     def create(self, validated_data):
-#         user = validated_data['user']
-#         refresh = RefreshToken.for_user(user)
-#         return {
-#             'refresh': str(refresh),
-#             'access': str(refresh.access_token),
-#             'rol': user.rol,
-#             'user': UsuarioSerializer(user).data,
-#         }
-#     def update(self, instance, validated_data):
-#         """Este método no se necesita para el inicio de sesión."""
-#         # Since we are not using this serializer to update anything, we can leave it empty
-#         return None    
 
 class LoginSerializer(serializers.Serializer):
     """Serializer for handling user login."""

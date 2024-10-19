@@ -33,8 +33,6 @@ class DireccionAdmin(admin.ModelAdmin):
     list_display = ('id_direccion', 'calle', 'numero')       
     
 
-            
-
 admin.site.register(Direccion, DireccionAdmin)
 admin.site.register(Producto, ProductoAdmin)
 
