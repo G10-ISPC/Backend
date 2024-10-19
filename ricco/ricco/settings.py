@@ -87,16 +87,7 @@ AUTH_PASSWORD_VALIDATORS = [
             'min_length': 8,
         }
     },
-    # Desactiva otros validadores si no son necesarios para tu app
-    # {
-    #     'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    # },
-    # {
-    #     'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    # },
-    # {
-    #     'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    # },
+ 
 ]
 
 LANGUAGE_CODE = 'es-es'

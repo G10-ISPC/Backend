@@ -6,15 +6,14 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import  logout
 from .serializers import LoginSerializer, UserProfileSerializer
-# from django.utils.decorators import method_decorator
-# from django.views.decorators.csrf import csrf_exempt
+
 
 from django.contrib.auth import get_user_model
 from .serializers import (
     RegistroSerializers, ProductoSerializer, DireccionSerializer
 )
 from .models import Producto, Direccion
-# from .serializers import CustomTokenObtainPairSerializer
+
 
 
 # Función para crear tokens JWT
@@ -28,8 +27,6 @@ def obtener_tokens_para_usuario(usuario):
 
 
 # Clases de permisos personalizadas
-
-
 class IsAdmin(permissions.BasePermission):
     """Permiso que permite solo a los administradores acceder a la vista."""
 
@@ -69,42 +66,6 @@ class RegistroView(generics.CreateAPIView):
                 'user': serializer.data
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-# Vista para el Login de Usuarios
-# class LoginView(APIView):
-#     permission_classes = [AllowAny]  # Login accesible para todos
-
-#     def post(self, request):
-#         serializer = CustomTokenObtainPairSerializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)  # Lanza un error si no es válido
-        
-#         # Obtén las credenciales del usuario
-#         email = serializer.validated_data.get('email')
-#         password = serializer.validated_data.get('password')
-        
-#         # Autenticar al usuario
-#         usuario = authenticate(request, username=email, password=password)
-
-#         if usuario:
-#             login(request, usuario)
-#             tokens = obtener_tokens_para_usuario(usuario)
-#             return Response({
-#                 'tokens': tokens,
-#                 'user': {
-#                     'id': usuario.id,
-#                     'email': usuario.email,
-#                     'first_name': usuario.first_name,
-#                     'last_name': usuario.last_name,
-#                     'is_staff': usuario.is_staff,
-#                     'rol': 'admin' if usuario.is_superuser else 'cliente'  # Cambiado a 'rol' 10/10
-#                 }
-#             }, status=status.HTTP_200_OK)
-#         else:
-#             return Response({'error': 'Credenciales incorrectas'}, status=status.HTTP_400_BAD_REQUEST)
-
-#     def get(self, request):
-#         return Response(data={'message': 'GET request processed successfully'})
 
 
 class LoginView(APIView):
@@ -176,3 +137,5 @@ class UserProfileView(generics.RetrieveUpdateDestroyAPIView):
         user = self.get_object()
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    
