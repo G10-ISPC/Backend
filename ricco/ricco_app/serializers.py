@@ -41,7 +41,7 @@ class RegistroSerializers(serializers.ModelSerializer):
 
     class Meta:
         model = get_user_model()
-        fields = ('email', 'password', 'password2', 'first_name','last_name', 'telefono', 'direccion', 'is_staff', 'rol') #agregue campo rol 10/10
+        fields = ('email', 'password', 'password2', 'first_name', 'last_name', 'telefono', 'direccion', 'is_staff', 'rol')
 
     def validate(self, attrs):
         # Validar que las contraseñas coincidan
@@ -51,9 +51,8 @@ class RegistroSerializers(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        # Extraer y crear la dirección
-        direccion_data = validated_data.pop('direccion')
-        direccion_instance = Direccion.objects.create(**direccion_data)
+        # Extraer los datos de la dirección
+        direccion_data = validated_data.pop('direccion', None)
 
         # Crear el usuario
         user = get_user_model().objects.create(
@@ -61,19 +60,26 @@ class RegistroSerializers(serializers.ModelSerializer):
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
             telefono=validated_data['telefono'],
-            direccion=direccion_instance,
-            is_staff=validated_data.get(
-                'is_staff', False),  # Manejo de is_staff
+            is_staff=validated_data.get('is_staff', False),  # Manejo de is_staff
         )
         user.set_password(validated_data['password'])
-        user.rol = 'admin' if user.is_staff else 'cliente'  # Asigna rol 10/10
+
+        # Asignar rol
+        user.rol = 'admin' if user.is_staff else 'cliente'
+
+        # Guardar el usuario para poder vincular la dirección
         user.save()
 
-        # Generar tokens JWT para el usuario
+        # Crear la instancia de la dirección si está presente
+        if direccion_data:
+            direccion_instance = Direccion.objects.create(**direccion_data)
+            user.direccion = direccion_instance
+            user.save()
+
+        # Generar tokens JWT para el usuario (si es necesario)
         refresh = RefreshToken.for_user(user)
 
         return user
-
 # Serializador de Producto
 class ProductoSerializer(serializers.ModelSerializer):
     class Meta:
