@@ -6,6 +6,9 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import  logout
 from .serializers import LoginSerializer, UserProfileSerializer
+from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed 
+from .serializers import CustomTokenObtainPairSerializer
 
 
 from django.contrib.auth import get_user_model
@@ -68,21 +71,39 @@ class RegistroView(generics.CreateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+#Vista para el Login
 class LoginView(APIView):
     permission_classes = [AllowAny]  # Login accesible para todos
 
     def post(self, request):
-        serializer = LoginSerializer(data=request.data)  # Cambiado a LoginSerializer
-        serializer.is_valid(raise_exception=True)  # Lanza un error si no es válido
-        
-        # Utiliza el método create del serializer para obtener el usuario y los tokens
-        tokens_data = serializer.create(serializer.validated_data)
-        
-        return Response(tokens_data, status=status.HTTP_200_OK)
-
+        serializer = CustomTokenObtainPairSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=False):
+            return Response(serializer.validated_data, status=status.HTTP_200_OK)
+        else:
+            # Devuelve un error en un formato más simple
+            return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     def get(self, request):
         return Response(data={'message': 'GET request processed successfully'})
 
+# Vista para Logout
+class LogoutView(APIView):
+    # Logout solo para usuarios autenticados
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        # Realiza el logout
+        logout(request)
+        return Response({"message": "Logout exitoso"}, status=status.HTTP_200_OK)
+
+# Vista para Logout
+class LogoutView(APIView):
+    # Logout solo para usuarios autenticados
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        # Realiza el logout
+        logout(request)
+        return Response({"message": "Logout exitoso"}, status=status.HTTP_200_OK)
 
 # Vista para Logout
 class LogoutView(APIView):
