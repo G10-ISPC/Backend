@@ -5,7 +5,9 @@ from django.contrib.auth.password_validation import validate_password
 from .models import Producto, Direccion, CustomUser
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-
+from django.contrib.auth.models import User
+from .models import CustomUser
+from django.contrib.auth import get_user_model
 
 # Serializador de Usuario
 class UsuarioSerializer(serializers.ModelSerializer):
@@ -27,6 +29,108 @@ class DireccionSerializer(serializers.ModelSerializer):
         model = Direccion
         fields = ('calle', 'numero')
 
+class LoginSerializer(serializers.Serializer):
+    """Serializer for handling user login."""
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+        
+        # Cambiado de username a email
+        user = authenticate(request=self.context.get('request'), email=email, password=password)
+
+        #Verifica si el usuario no existe
+        if user is None:
+           
+            if not User.objects.filter(email=email).exists():
+                raise serializers.ValidationError("El usuario no existe. Registrese")
+            else:
+                raise serializers.ValidationError("Contraseña incorrecta.")
+
+        attrs['user'] = user
+        return attrs
+
+    def create(self, validated_data):
+        user = validated_data['user']
+        refresh = RefreshToken.for_user(user)
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'rol': user.rol,
+            'user': UsuarioSerializer(user).data,
+        }
+
+    def update(self, instance, validated_data):
+        """Este método no se necesita para el inicio de sesión."""
+        return None # Solo deja este método vacío para cumplir con la interfaz
+    
+# Serializador de Producto
+class ProductoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Producto
+        fields = '__all__'
+
+# Serializador de Autenticación
+class CustomTokenObtainPairSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        # Obtén el modelo de usuario
+        User = get_user_model()
+        user = User.objects.filter(email=email).first()
+
+        # Verifica si el usuario existe
+        if user is None:
+            raise serializers.ValidationError("El usuario no existe.")
+
+        # Verifica la contraseña
+        if not user.check_password(password):
+            raise serializers.ValidationError("Contraseña incorrecta.")
+
+        # Si las credenciales son válidas, genera los tokens
+        refresh = RefreshToken.for_user(user)
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'rol': user.rol,
+            'user': UsuarioSerializer(user).data,
+        }
+
+    def create(self, validated_data):
+        raise NotImplementedError("Este método no es necesario para la creación de tokens JWT.")
+
+    def update(self, instance, validated_data):
+        raise NotImplementedError("Este método no es necesario para la actualización de tokens JWT.")
+
+    
+class UserProfileSerializer(serializers.ModelSerializer):
+    direccion = DireccionSerializer()
+
+    class Meta:
+        model = CustomUser
+        fields = ('email', 'first_name', 'last_name', 'telefono', 'direccion')
+
+    def update(self, instance, validated_data):
+        direccion_data = validated_data.pop('direccion', None)
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.telefono = validated_data.get('telefono', instance.telefono)
+
+        if direccion_data:
+            direccion_instance = instance.direccion
+            direccion_instance.calle = direccion_data.get('calle', direccion_instance.calle)
+            direccion_instance.numero = direccion_data.get('numero', direccion_instance.numero)
+            direccion_instance.save()
+
+        instance.save()
+        return instance   
+    
 # Serializador de Registro de Usuario
 class RegistroSerializers(serializers.ModelSerializer):
     email = serializers.EmailField(
@@ -80,98 +184,5 @@ class RegistroSerializers(serializers.ModelSerializer):
         refresh = RefreshToken.for_user(user)
 
         return user
-# Serializador de Producto
-class ProductoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Producto
-        fields = '__all__'
-
-# Serializador de Autenticación
-class CustomTokenObtainPairSerializer(serializers.Serializer):
-    """
-    Serializador para obtener tokens JWT cuando el usuario se autentica.
-    """
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
-
-    def validate(self, attrs):
-        email = attrs.get('email')
-        password = attrs.get('password')
-
-        # Autenticar al usuario
-        user = get_user_model().objects.filter(email=email).first()
-        if user and user.check_password(password):
-            refresh = RefreshToken.for_user(user)
-            print(f"Rol obtenido: {user.rol}")  # Agrega este log
-            return {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-                'rol': user.rol, #10/10
-                'user': UsuarioSerializer(user).data,
-            }
-
-        raise serializers.ValidationError("Credenciales inválidas")
-
-    def create(self, validated_data):
-        raise NotImplementedError(
-            "Este método no es necesario para la creación de tokens JWT.")
-
-    def update(self, instance, validated_data):
-        raise NotImplementedError(
-            "Este método no es necesario para la actualización de tokens JWT.")
-
-
-class LoginSerializer(serializers.Serializer):
-    """Serializer for handling user login."""
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
-
-    def validate(self, attrs):
-        email = attrs.get('email')
-        password = attrs.get('password')
-        
-        # Cambiado de username a email
-        user = authenticate(request=self.context.get('request'), email=email, password=password)
-
-        if user is None:
-            raise serializers.ValidationError("Credenciales inválidas")
-
-        attrs['user'] = user
-        return attrs
-
-    def create(self, validated_data):
-        user = validated_data['user']
-        refresh = RefreshToken.for_user(user)
-        return {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-            'rol': user.rol,
-            'user': UsuarioSerializer(user).data,
-        }
-
-    def update(self, instance, validated_data):
-        """Este método no se necesita para el inicio de sesión."""
-        return None # Solo deja este método vacío para cumplir con la interfaz
-    
-class UserProfileSerializer(serializers.ModelSerializer):
-    direccion = DireccionSerializer()
-
-    class Meta:
-        model = CustomUser
-        fields = ('email', 'first_name', 'last_name', 'telefono', 'direccion')
-
-    def update(self, instance, validated_data):
-        direccion_data = validated_data.pop('direccion', None)
-        instance.first_name = validated_data.get('first_name', instance.first_name)
-        instance.last_name = validated_data.get('last_name', instance.last_name)
-        instance.telefono = validated_data.get('telefono', instance.telefono)
-
-        if direccion_data:
-            direccion_instance = instance.direccion
-            direccion_instance.calle = direccion_data.get('calle', direccion_instance.calle)
-            direccion_instance.numero = direccion_data.get('numero', direccion_instance.numero)
-            direccion_instance.save()
-
-        instance.save()
-        return instance   
+       
     
