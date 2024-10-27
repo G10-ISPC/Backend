@@ -121,6 +121,12 @@ class ProductoViewSet(viewsets.ModelViewSet):
     serializer_class = ProductoSerializer
     permission_classes = [IsAdminOrReadOnly]  # Solo admin puede editar
 
+    def perform_update(self, serializer):
+        product = serializer.save()
+        print(f"Producto {product.id_producto} actualizado: is_in_stock={product.is_in_stock}")
+
+
+
 
 # Vista para el CRUD de Direcciones
 class DireccionViewSet(viewsets.ModelViewSet):
