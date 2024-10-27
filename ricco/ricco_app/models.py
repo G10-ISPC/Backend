@@ -8,6 +8,8 @@ class Producto(models.Model):
     nombre_producto = models.CharField(max_length=100, blank=False, default='')
     descripcion = models.TextField(blank=False, max_length=255, default='')
     precio = models.DecimalField(max_digits=10, decimal_places=2, blank=False, default=0.0)
+    is_in_stock = models.BooleanField(default=True)
+    
 
     class Meta:
         db_table = 'producto'
@@ -53,6 +55,14 @@ class CustomUserManager(BaseUserManager):
         user.rol = 'admin'  # Asegúrate de asignar el rol correcto
         user.save(using=self._db)
         return user
+
+        #if extra_fields.get('is_staff') is not True:
+         #   raise ValueError('Superuser debe tener is_staff=True.')
+        #if extra_fields.get('is_superuser') is not True:
+          #  raise ValueError('Superuser debe tener is_superuser=True.')
+
+        #return self.create_user(email, password=password, **extra_fields)
+
 
 # Modelo de Usuario Personalizado
 class CustomUser(AbstractUser):
