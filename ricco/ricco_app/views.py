@@ -5,9 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import  logout
-from .serializers import LoginSerializer, UserProfileSerializer
-from rest_framework import serializers
-from rest_framework.exceptions import AuthenticationFailed 
+from .serializers import  UserProfileSerializer
 from .serializers import CustomTokenObtainPairSerializer
 
 
@@ -53,7 +51,23 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         return request.user and request.user.rol == 'admin'
 
 
-# Vista para el Registro de Usuarios
+# # Vista para el Registro de Usuarios
+# class RegistroView(generics.CreateAPIView):
+#     queryset = get_user_model().objects.all()
+#     serializer_class = RegistroSerializers
+#     permission_classes = [AllowAny]  # Registro accesible para todos
+
+#     def post(self, request, *args, **kwargs):
+#         serializer = self.serializer_class(data=request.data)
+#         if serializer.is_valid():
+#             user = serializer.save()
+#             tokens = obtener_tokens_para_usuario(user)
+#             return Response({
+#                 'tokens': tokens,
+#                 'user': serializer.data
+#             }, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class RegistroView(generics.CreateAPIView):
     queryset = get_user_model().objects.all()
     serializer_class = RegistroSerializers
@@ -68,9 +82,15 @@ class RegistroView(generics.CreateAPIView):
                 'tokens': tokens,
                 'user': serializer.data
             }, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
+        else:
+            errors = serializer.errors
+            if 'email' in errors and isinstance(errors['email'], list):
+                # Envía un mensaje simple sin corchetes ni clave "error"
+                return Response("Este correo ya existe. Por favor utilice otro.", status=status.HTTP_400_BAD_REQUEST)
+            
+            # Otros errores en un formato más simple
+            simple_errors = {field: error[0] for field, error in errors.items()}
+            return Response(simple_errors, status=status.HTTP_400_BAD_REQUEST)
 #Vista para el Login
 class LoginView(APIView):
     permission_classes = [AllowAny]  # Login accesible para todos
@@ -95,25 +115,6 @@ class LogoutView(APIView):
         logout(request)
         return Response({"message": "Logout exitoso"}, status=status.HTTP_200_OK)
 
-# Vista para Logout
-class LogoutView(APIView):
-    # Logout solo para usuarios autenticados
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        # Realiza el logout
-        logout(request)
-        return Response({"message": "Logout exitoso"}, status=status.HTTP_200_OK)
-
-# Vista para Logout
-class LogoutView(APIView):
-    # Logout solo para usuarios autenticados
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        # Realiza el logout
-        logout(request)
-        return Response({"message": "Logout exitoso"}, status=status.HTTP_200_OK)
 
 # Vista para el CRUD de Productos
 class ProductoViewSet(viewsets.ModelViewSet):
