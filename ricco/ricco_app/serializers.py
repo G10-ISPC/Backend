@@ -6,8 +6,7 @@ from .models import Producto, Direccion, CustomUser
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
-from .models import CustomUser
-from django.contrib.auth import get_user_model
+
 
 # Serializador de Usuario
 class UsuarioSerializer(serializers.ModelSerializer):
@@ -185,4 +184,3 @@ class RegistroSerializers(serializers.ModelSerializer):
 
         return user
        
-    
