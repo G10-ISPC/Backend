@@ -16,15 +16,11 @@ Repositorios de los frontends:
 
 ## 🚀 Tecnologías utilizadas
 
-- **Python 3**
-- **Django 4+**
+- **Python**
 - **Django REST Framework**
 - **MySQL**
 - **JWT (Autenticación)**
-- **Django Token Auth**
-- **CORS**
-- **CoreAPI**
-- **SimpleJWT**
+
 
 ## 📝 Licencia
 
