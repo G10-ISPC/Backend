@@ -193,7 +193,7 @@ class TodasComprasView(APIView):
         
         print("Encabezados de la solicitud:", request.headers)
 
-        if not request.user.rol or request.user.rol.nombre_rol != "Administrador":
+        if (not request.user.is_staff) and (not request.user.rol or request.user.rol.nombre_rol != "Administrador"):
             print(f"Acceso denegado: el rol del usuario es {request.user.rol.nombre_rol if request.user.rol else 'ninguno'}")
             return Response(
                 {"error": "No tienes permisos para acceder a este recurso."},
