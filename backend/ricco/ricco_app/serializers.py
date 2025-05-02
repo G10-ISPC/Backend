@@ -67,38 +67,35 @@ class RegistroSerializers(serializers.ModelSerializer):
         validators=[UniqueValidator(queryset=CustomUser.objects.all())]
     )
     password = serializers.CharField(
-        write_only=True, required=True, validators=[validate_password])
+        write_only=True, required=True, validators=[validate_password]
+    )
     password2 = serializers.CharField(write_only=True, required=True)
-    direccion = DireccionSerializer(required=True)
+   
 
     class Meta:
         model = CustomUser
-        fields = ('password', 'password2', 'email',
-                  'first_name', 'last_name', 'telefono', 'direccion', 'is_staff')
+        fields = (
+            'password', 'password2', 'email',
+            'first_name', 'last_name', 'telefono', 'is_staff'
+        )
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError(
-                {"password": "Los campos de contraseña no coinciden."})
+                {"password": "Los campos de contraseña no coinciden."}
+            )
         return attrs
 
-    def create(self, validated_data):
-        direccion_data = validated_data.pop('direccion')
-       
-        direccion_instance = Direccion.objects.create(**direccion_data)
-
+    def create(self, validated_data):        
         user = get_user_model().objects.create(
-         
             email=validated_data['email'],
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
             telefono=validated_data['telefono'],
-            direccion=direccion_instance,
         )
         user.set_password(validated_data['password'])
         user.save()
         return user
-
 
 class RolSerializer(serializers.ModelSerializer):
     class Meta:
