@@ -2,33 +2,33 @@ from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.models import User 
+from django.contrib.auth.models import User
 
-class Localidad(models.Model):
-    id_localidad = models.AutoField(primary_key=True)
-    nombre_localidad = models.CharField(max_length=50, blank=False, default='')
-    cod_postal = models.IntegerField(blank=False, default=2000)
+# class Localidad(models.Model):
+#     id_localidad = models.AutoField(primary_key=True)
+#     nombre_localidad = models.CharField(max_length=50, blank=False, default='')
+#     cod_postal = models.IntegerField(blank=False, default=2000)
 
-    class Meta:
-        db_table = 'localidad'
-        verbose_name = 'Localidad'
-        verbose_name_plural = 'Localidades'
+#     class Meta:
+#         db_table = 'localidad'
+#         verbose_name = 'Localidad'
+#         verbose_name_plural = 'Localidades'
 
-    def __str__(self):
-        return str(self.id_localidad)
+#     def __str__(self):
+#         return str(self.id_localidad)
 
-class Barrio(models.Model):
-    id_barrio = models.AutoField(primary_key=True)
-    nombre_barrio = models.CharField(max_length=50, blank=False, default='')
-    localidad = models.ForeignKey(Localidad, to_field='id_localidad', on_delete=models.SET_NULL, null=True, blank=True, related_name="barrio")
+# class Barrio(models.Model):
+#     id_barrio = models.AutoField(primary_key=True)
+#     nombre_barrio = models.CharField(max_length=50, blank=False, default='')
+#     localidad = models.ForeignKey(Localidad, to_field='id_localidad', on_delete=models.SET_NULL, null=True, blank=True, related_name="barrio")
 
-    class Meta:
-        db_table = 'barrio'
-        verbose_name = 'Barrio'
-        verbose_name_plural = 'Barrios'
+#     class Meta:
+#         db_table = 'barrio'
+#         verbose_name = 'Barrio'
+#         verbose_name_plural = 'Barrios'
 
-    def __str__(self):
-        return str(self.id_barrio)
+#     def __str__(self):
+#         return str(self.id_barrio)
 
 class Rol(models.Model):
     id_rol = models.AutoField(primary_key=True)
@@ -62,7 +62,7 @@ class Direccion(models.Model):
     id_direccion = models.AutoField(primary_key=True)
     calle = models.CharField(max_length=100, blank=False, default='')
     numero = models.DecimalField(max_digits=10, decimal_places=2, blank=False, default=0.0)
-    barrio = models.ForeignKey(Barrio, to_field='id_barrio', on_delete=models.SET_NULL, null=True, blank=True, related_name="direccion")
+    # barrio = models.ForeignKey(Barrio, to_field='id_barrio', on_delete=models.SET_NULL, null=True, blank=True, related_name="direccion")
 
     class Meta:
         db_table = 'direccion'

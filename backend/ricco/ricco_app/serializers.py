@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 
-from .models import CustomUser, Localidad, Barrio,Rol, Producto, Direccion,Compra,Detalle,Permiso,Rol_Permiso,Pedido
+from .models import CustomUser, Rol, Producto, Direccion,Compra,Detalle,Permiso,Rol_Permiso,Pedido
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -39,17 +39,18 @@ class PerfilUsuarioSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
-class LocalidadSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Localidad
-        fields = '__all__'
+    
+# class LocalidadSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Localidad
+#         fields = '__all__'
 
-class BarrioSerializer(serializers.ModelSerializer):
-    localidad = LocalidadSerializer(required=True)
+# class BarrioSerializer(serializers.ModelSerializer):
+#     localidad = LocalidadSerializer(required=True)
 
-    class Meta:
-        model = Barrio
-        fields = ('nombre_barrio')
+#     class Meta:
+#         model = Barrio
+#         fields = ('nombre_barrio')
 
 class DireccionSerializer(serializers.ModelSerializer):
 

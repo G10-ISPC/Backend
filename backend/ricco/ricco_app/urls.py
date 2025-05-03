@@ -7,8 +7,8 @@ from django.conf.urls.static import static
 from django.conf import settings
 
 router= routers.DefaultRouter()
-router.register(r'localidad',views.LocalidadViewSet)
-router.register(r'barrio',views.BarrioViewSet)
+# router.register(r'localidad',views.LocalidadViewSet)
+# router.register(r'barrio',views.BarrioViewSet)
 router.register(r'rol',views.RolViewSet)
 router.register(r'producto',views.ProductoViewSet)
 router.register(r'direccion',views.DireccionViewSet)
