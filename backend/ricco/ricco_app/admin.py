@@ -2,8 +2,8 @@ from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin
 
-from .models import Localidad
-from .models import Barrio
+# from .models import Localidad
+# from .models import Barrio
 from .models import Rol
 from .models import Producto
 from .models import Direccion
@@ -28,15 +28,15 @@ class CustomUserAdmin(UserAdmin):
             'fields': ('email', 'password1', 'password2'),
         }),
     )
-    list_display = ('email', 'first_name', 'last_name', 'is_staff', Rol)
+    list_display = ('email', 'first_name', 'last_name', 'is_staff', 'rol')
     search_fields = ('email', 'first_name', 'last_name', 'nombre_rol')
     ordering = ('email',)
 
-class LocalidadAdmin(admin.ModelAdmin):
-    list_display =  ('id_localidad', 'nombre_localidad', 'cod_postal')
+# class LocalidadAdmin(admin.ModelAdmin):
+#     list_display =  ('id_localidad', 'nombre_localidad', 'cod_postal')
     
-class BarrioAdmin(admin.ModelAdmin):
-    list_display = ('id_barrio', 'nombre_barrio')
+# class BarrioAdmin(admin.ModelAdmin):
+#     list_display = ('id_barrio', 'nombre_barrio')
     
 class RolAdmin(admin.ModelAdmin):
     list_display = ('id_rol','nombre_rol')
@@ -75,13 +75,13 @@ class DetalleInline(admin.TabularInline):
     def has_add_permission(self, request, obj=None):
         return False
 
-class CompraAdmin(admin.ModelAdmin):
-    inlines = [DetalleInline]
+# class CompraAdmin(admin.ModelAdmin):
+#     inlines = [DetalleInline]
 
    
         
-admin.site.register(Localidad, LocalidadAdmin )
-admin.site.register(Barrio, BarrioAdmin)
+# admin.site.register(Localidad, LocalidadAdmin )
+# admin.site.register(Barrio, BarrioAdmin)
 admin.site.register(Direccion, DireccionAdmin)
 admin.site.register(Producto, ProductoAdmin)
 admin.site.register(Rol, RolAdmin)

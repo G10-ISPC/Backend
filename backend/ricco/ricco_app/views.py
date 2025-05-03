@@ -13,9 +13,9 @@ from django.http import HttpResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import IsAdminUser
 
-from .serializers import UsuarioSerializers,RegistroSerializers, LocalidadSerializer,BarrioSerializer,RolSerializer, ProductoSerializer, DireccionSerializer, CompraSerializer,DetalleSerializer, PedidoSerializer,PermisoSerializer, Rol_PermisoSerializer, PerfilUsuarioSerializer
+from .serializers import UsuarioSerializers,RegistroSerializers, RolSerializer, ProductoSerializer, DireccionSerializer, CompraSerializer,DetalleSerializer, PedidoSerializer,PermisoSerializer, Rol_PermisoSerializer, PerfilUsuarioSerializer
 
-from .models import Localidad, Barrio,Rol, Producto,Direccion, Compra,Detalle,Pedido,Permiso, Rol_Permiso
+from .models import Rol, Producto,Direccion, Compra,Detalle,Pedido,Permiso, Rol_Permiso
 
 
 
@@ -102,11 +102,12 @@ class RegistroView(generics.CreateAPIView):
 
         if serializer.is_valid():
             user = serializer.save()
-            token, created = Token.objects.get_or_create(user=user)
+            token, _ = Token.objects.get_or_create(user=user)
             return Response({'token': token.key, 'user': serializer.data}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     @csrf_exempt
     def get(self, request, *args, **kwargs):
+        print(f"GET llamado por: {request.user}")
         return Response(data={'message': 'GET request processed successfully'}, status=status.HTTP_200_OK)
 
 class PerfilUsuarioView(generics.RetrieveUpdateDestroyAPIView):
@@ -116,13 +117,13 @@ class PerfilUsuarioView(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         return self.request.user
              
-class LocalidadViewSet(viewsets.ModelViewSet):
-    queryset=Localidad.objects.all()
-    serializer_class= LocalidadSerializer
+# class LocalidadViewSet(viewsets.ModelViewSet):
+#     queryset=Localidad.objects.all()
+#     serializer_class= LocalidadSerializer
  
-class BarrioViewSet(viewsets.ModelViewSet):
-    queryset=Barrio.objects.all()
-    serializer_class= BarrioSerializer
+# class BarrioViewSet(viewsets.ModelViewSet):
+#     queryset=Barrio.objects.all()
+#     serializer_class= BarrioSerializer
  
 class RolViewSet(viewsets.ModelViewSet):
     queryset=Rol.objects.all()
@@ -250,5 +251,6 @@ class AdminView(APIView):
     permission_classes = [IsAdminUser]  
 
     def get(self, request):
+        print(f"GET llamado por: {request.user}")
         return Response({"message": "Bienvenido al panel de administración"}, status=status.HTTP_200_OK)    
           
