@@ -12,11 +12,22 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.http import HttpResponse
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import IsAdminUser
+from django.http import JsonResponse
+import json
+import mercadopago
+
+from datetime import datetime
 
 from .serializers import UsuarioSerializers,RegistroSerializers, RolSerializer, ProductoSerializer, DireccionSerializer, CompraSerializer,DetalleSerializer, PedidoSerializer,PermisoSerializer, Rol_PermisoSerializer, PerfilUsuarioSerializer
 
 from .models import Rol, Producto,Direccion, Compra,Detalle,Pedido,Permiso, Rol_Permiso
 
+from django.conf import settings
+
+
+sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
+
+User = get_user_model()
 
 
 def bienvenida (request): 
@@ -253,4 +264,75 @@ class AdminView(APIView):
     def get(self, request):
         print(f"GET llamado por: {request.user}")
         return Response({"message": "Bienvenido al panel de administración"}, status=status.HTTP_200_OK)    
+
+@csrf_exempt
+def crear_pagos_view(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+
+            user = User.objects.get(id=data["user"])
+            
+            compra = Compra.objects.create(
+                descripcion=data["descripcion"],
+                user=user,
+                fecha=datetime.now(),
+                precio_total=0.0  
+            )
+
+            total = 0
+            items = []
+
+            for detalle_data in data["detalles"]:
+                producto = Producto.objects.get(id_producto=detalle_data["id_producto"])
+                cantidad = int(detalle_data["cantidad"])
+                precio_unitario = float(producto.precio)
+                precio_calculado = cantidad * precio_unitario
+                total += precio_calculado
+
+              
+                Detalle.objects.create(
+                    cantidad=cantidad,
+                    precio_calculado=precio_calculado,
+                    producto=producto,
+                    compra=compra
+                )
+
+                items.append({
+                    "title": producto.nombre_producto,
+                    "quantity": cantidad,
+                    "unit_price": precio_unitario,
+                    "currency_id": "ARS",
+                })
+
+            compra.precio_total = total
+            compra.save()
+
+            preference_data = {
+                "items": items,
+                "back_urls": {
+                    "success": "https://google.com",
+                    "failure": "https://google.com", "pending": "https://google.com",
+                },
+                "auto_return": "approved",
+                "metadata": {
+                    "compra_id": compra.id_compra
+                }
+            }
+
+            preference_response = sdk.preference().create(preference_data)
+            if preference_response["status"] != 201:
+               print("Error de Mercado Pago:", preference_response["response"])
+               return JsonResponse({"error": "Error al generar preferencia de pago", "detalle": preference_response["response"]}, status=500)
+
+            init_point = preference_response["response"]["init_point"]
+
+
+            return JsonResponse({"init_point": init_point}, status=201)
+
+        except Exception as e:
+            print("Error:", e)
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)
           
