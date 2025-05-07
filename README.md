@@ -36,6 +36,7 @@ El objetivo de Ricco Burgers es brindar a los pequeños negocios gastronómicos 
 
 1. Clonar el repositorio:
 ```bash
+
 git clone https://github.com/G10-ISPC/Ricco-Backend.git
 cd Ricco-Backend
 
@@ -69,18 +70,13 @@ python manage.py runserver
 ---
 
 🔐 Funcionalidades principales
+
 Registro e inicio de sesión de usuarios
-
 Roles diferenciados: cliente y administrador
-
 CRUD de productos
-
 Gestión de pedidos e historial de compras
-
 Validación de datos sensibles
-
 Panel de administración
-
 API RESTful para integración con frontend web y mobile
 
 ---
@@ -100,12 +96,10 @@ riccoburgers_backend/
 ---
 
 📌 En desarrollo / mejoras futuras
+
 Integración completa con Mercado Pago (modo sandbox y producción)
-
 Exportación de pedidos a Excel
-
 Dashboard con métricas de ventas
-
 Sistema de promociones y fidelización
 
 ---
@@ -113,9 +107,7 @@ Sistema de promociones y fidelización
 📘 Documentación complementaria
 
 Autenticación basada en JWT
-
 Rutas protegidas y validadas por rol
-
 Consumo de esta API desde Angular y Android vía Axios/Fetch
 
 ---
