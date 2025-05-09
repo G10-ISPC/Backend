@@ -1,40 +1,50 @@
-# 🍔 RICCO BURGUER - Backend API
+# RICCO BURGER - API Backend
 
-¡Bienvenido al repositorio del backend de **RICCO BURGUER**!  
-Este sistema fue desarrollado con **Django** y **Django REST Framework**, y gestiona todo lo relacionado con la plataforma de RICCO BURGUER: usuarios, productos, compras, pedidos y más.
+## Descripción General
 
-La API está diseñada para integrarse con dos clientes frontend:
+La API Backend de RICCO BURGER es un servicio RESTful robusto construido con Django y Django REST Framework. Este sistema gestiona la lógica de negocio y operaciones de datos para la plataforma RICCO BURGER, incluyendo gestión de usuarios, catálogo de productos, procesamiento de pedidos y manejo de transacciones.
 
-- 💻 Una aplicación **web** desarrollada con **Angular**
-- 📱 Una aplicación **mobile** desarrollada con **Java** en **Android Studio**
+## Arquitectura del Sistema
 
-Repositorios de los frontends:
+La API funciona como infraestructura backend para dos aplicaciones cliente:
 
-- [Frontend Mobile](https://github.com/G10-ISPC/Frontend-Mobile)
+- **Aplicación Web**: Desarrollada con framework Angular
+- **Aplicación Móvil**: Desarrollada en Java para plataformas Android
+
+### Repositorios Relacionados
+
 - [Frontend Web](https://github.com/G10-ISPC/Frontend-Web)
+- [Frontend Móvil](https://github.com/G10-ISPC/Frontend-Mobile)
 
+## Stack Tecnológico
 
-## 🚀 Tecnologías utilizadas
+### Tecnologías Principales
+- Python
+- Django REST Framework
+- Base de Datos MySQL
+- Autenticación JWT
 
-- **Python**
-- **Django REST Framework**
-- **MySQL**
-- **JWT (Autenticación)**
+### Características Principales
+- Arquitectura API RESTful
+- Autenticación y autorización segura
+- Validación integral de datos
+- Diseño de base de datos escalable
 
+## Licencia
 
-## 📝 Licencia
+Este proyecto está licenciado para fines educativos y de aprendizaje. Todos los derechos reservados.
 
-Este proyecto es de uso **libre para fines educativos y de aprendizaje**.  
+## Equipo de Desarrollo
 
-## 🙌 Equipo de desarrollo
+Desarrollado por estudiantes del ISPC:
 
-Este proyecto fue desarrollado por estudiantes del ISPC:
-
-- Carla Elizabeth Arévalo  
-- Micaela Inés Juarez Manescotto  
-- Delfina Aricoma  
-- Ernesto Agustín Cevasco  
-- Mariana Cos  
-- Laura Patricia Cruz   
-- Melisa Gulle  
-- Dalma Florencia del Valle Ponce
+| Nombre | Rol |
+|--------|-----|
+| Carla Elizabeth Arévalo | Desarrollador/a |
+| Micaela Inés Juarez Manescotto | Desarrollador/a |
+| Delfina Aricoma | Desarrollador/a |
+| Ernesto Agustín Cevasco | Desarrollador/a |
+| Mariana Cos | Desarrollador/a |
+| Laura Patricia Cruz | Desarrollador/a |
+| Melisa Gulle | Desarrollador/a |
+| Dalma Florencia del Valle Ponce | Desarrollador/a |
