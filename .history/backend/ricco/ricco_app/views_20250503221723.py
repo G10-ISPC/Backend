@@ -24,12 +24,6 @@ from .models import Rol, Producto,Direccion, Compra,Detalle,Pedido,Permiso, Rol_
 
 from django.conf import settings
 
-from datetime import datetime
-from django.utils.timezone import now
-from django.utils import timezone
-import logging
-from rest_framework import status
-
 
 sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
 
@@ -57,48 +51,6 @@ def bienvenida (request):
     <p>Recuerda que estas rutas corresponden a la API de nuestra aplicación.</p>
     """
     return HttpResponse(message)
-logger = logging.getLogger(__name__)
-
-class CancelarPedidoView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, id_compra):
-        print(f"Recibiendo solicitud para cancelar la compra con id: {id_compra}")
-        try:
-            compra = Compra.objects.get(id_compra=id_compra, user=request.user)
-            print(f"Compra encontrada: {compra}")
-
-            # Verifica si ya fue cancelada
-            if compra.estado == 'cancelado':
-                return Response({'error': 'Esta compra ya fue cancelada.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Verifica que la fecha de cancelación no sea None
-            if compra.cancelable_hasta is None:
-                print(f"Fecha de cancelación excedida. Ahora: {timezone.now()} - Cancelable hasta: {compra.cancelable_hasta}") 
-                return Response({'error': 'La fecha de cancelación no está definida para esta compra.'}, 
-                                status=status.HTTP_400_BAD_REQUEST)
-
-            # Compara con la zona horaria correcta
-            if timezone.now() > compra.cancelable_hasta:
-                return Response({'error': 'Ya no puedes cancelar esta compra.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Cancela la compra
-            compra.estado = 'cancelado'
-            compra.save()
-            print(f"Compra {compra.id_compra} cancelada exitosamente")
-
-
-            return Response({'mensaje': 'Compra cancelada exitosamente.'}, status=status.HTTP_200_OK)
-
-        except Compra.DoesNotExist:
-            logger.error(f"Compra no encontrada o no pertenece al usuario. ID: {id_compra}")
-            print(f"Compra no encontrada o no pertenece al usuario. ID: {id_compra}")
-            return Response({'error': 'Compra no encontrada o no pertenece al usuario.'}, status=status.HTTP_404_NOT_FOUND)
-
-        except Exception as e:
-            logger.exception(f"Error inesperado al cancelar compra ID: {id_compra}. Excepción: {str(e)}")
-            print(f"Error inesperado al cancelar la compra {id_compra}: {str(e)}")
-            return Response({'error': f'Error inesperado: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class LoginView(APIView):
     #@method_decorator(csrf_exempt)
@@ -231,16 +183,8 @@ class MisComprasView(APIView):
 
     def get(self, request):
         compras = Compra.objects.filter(user=request.user)
-
-        for compra in compras:
-            # Si el estado es pendiente y ya venció el tiempo de cancelación
-            if (
-                compra.estado == 'Pendiente'
-                and compra.cancelable_hasta
-                and timezone.now() > compra.cancelable_hasta
-            ):
-                compra.estado = 'En Preparación'
-                compra.save()
+        print(f"Usuario autenticado: {request.user}")
+        print(f"Compras del usuario: {compras}")
 
         serializer = CompraSerializer(compras, many=True)
         return Response(serializer.data)
@@ -311,20 +255,8 @@ class Rol_PermisoViewSet(viewsets.ModelViewSet):
     serializer_class= Rol_PermisoSerializer        
        
 class PedidoViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
-    queryset = Pedido.objects.all()
-    serializer_class = PedidoSerializer 
-
-    def create(self, request, *args, **kwargs):
-        print("Datos recibidos:", request.data)  # Ver qué datos están llegando
-        serializer = self.get_serializer(data=request.data)
-
-        if serializer.is_valid():
-            pedido = serializer.save()
-            print("Pedido registrado con éxito:", pedido)
-            return Response(serializer.data, status=201)
-        print("Errores al registrar pedido:", serializer.errors)  # Ver errores específicos
-        return Response(serializer.errors, status=400)
+    queryset=Pedido.objects.all()
+    serializer_class= PedidoSerializer  
     
 class AdminView(APIView):
     permission_classes = [IsAdminUser]  
