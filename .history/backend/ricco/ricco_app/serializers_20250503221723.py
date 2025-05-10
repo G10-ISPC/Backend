@@ -151,6 +151,6 @@ class Rol_PermisoSerializer(serializers.ModelSerializer):
 class PedidoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Pedido
-        fields = ['fecha_pedido', 'estado', 'cancelable_hasta', 'user']
+        fields = '__all__'
 
 
