@@ -235,7 +235,7 @@ class MisComprasView(APIView):
         for compra in compras:
             # Si el estado es pendiente y ya venció el tiempo de cancelación
             if (
-                compra.estado == 'Pendiente'
+                compra.estado == 'pendiente'
                 and compra.cancelable_hasta
                 and timezone.now() > compra.cancelable_hasta
             ):
@@ -247,6 +247,7 @@ class MisComprasView(APIView):
 
     def post(self, request):
         data = request.data
+        data.pop('descripcion', None)  # Elimina si viene del frontend
         data['user'] = request.user.id
         serializer = CompraSerializer(data=data)
         if serializer.is_valid():
@@ -341,15 +342,17 @@ def crear_pagos_view(request):
 
             user = User.objects.get(id=data["user"])
             
+            # Inicializamos campos necesarios
+            total = 0
+            items = []
+            descripcion_items = []
+            
             compra = Compra.objects.create(
-                descripcion=data["descripcion"],
+                descripcion="", #se actualizará luego
                 user=user,
                 fecha=datetime.now(),
                 precio_total=0.0  
             )
-
-            total = 0
-            items = []
 
             for detalle_data in data["detalles"]:
                 producto = Producto.objects.get(id_producto=detalle_data["id_producto"])
@@ -365,6 +368,8 @@ def crear_pagos_view(request):
                     producto=producto,
                     compra=compra
                 )
+                
+                descripcion_items.append(f"{cantidad} {producto.nombre_producto}")
 
                 items.append({
                     "title": producto.nombre_producto,
@@ -372,8 +377,9 @@ def crear_pagos_view(request):
                     "unit_price": precio_unitario,
                     "currency_id": "ARS",
                 })
-
+            # Actualizamos la compra con el total y la descripción generada
             compra.precio_total = total
+            compra.descripcion = ", ".join(descripcion_items)
             compra.save()
 
             preference_data = {
@@ -403,4 +409,23 @@ def crear_pagos_view(request):
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
+
+class ActualizarComprasView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        ahora = timezone.now()
+        compras_actualizadas = []
+
+        compras = Compra.objects.filter(estado='pendiente', cancelable_hasta__lt=ahora)
+        for compra in compras:
+            compra.estado = 'preparacion'
+            compra.save()
+            compras_actualizadas.append(compra.id_compra)
+
+        return Response({
+            "mensaje": f"Se actualizaron {len(compras_actualizadas)} compras.",
+            "compras_actualizadas": compras_actualizadas
+        })
+
           
