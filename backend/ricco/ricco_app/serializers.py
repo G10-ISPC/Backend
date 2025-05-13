@@ -125,7 +125,23 @@ class CompraSerializer(serializers.ModelSerializer):
     user_last_name = serializers.CharField(source='user.last_name', read_only=True)
     class Meta:
         model = Compra
-        fields = '__all__'       
+        fields = '__all__'    
+    
+    def create(self, validated_data):
+        # Crea la compra
+        compra = Compra.objects.create(**validated_data)
+
+        # Busca los detalles asociados (ya deberían haber sido creados)
+        detalles = Detalle.objects.filter(compra=compra).select_related('producto')
+
+        # Construir descripción
+        descripcion = []
+        for d in detalles:
+            descripcion.append(f"{d.cantidad} {d.producto.nombre_producto}")
+        compra.descripcion = ', '.join(descripcion) if descripcion else 'Compra sin detalles'
+        compra.save()
+
+        return compra     
 
 class MisComprasView(APIView):
     permission_classes = [IsAuthenticated]
