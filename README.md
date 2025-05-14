@@ -1,31 +1,60 @@
-# 🍔 RICCO BURGUER - Backend API
-¡Bienvenido al repositorio del backend de **RICCO BURGUER**!  
-Este sistema fue desarrollado con **Django** y **Django REST Framework**, y gestiona todo lo relacionado con la plataforma de RICCO BURGUER: usuarios, productos, compras, pedidos y más.
-La API está diseñada para integrarse con dos clientes frontend:
-- 💻 Una aplicación **web** desarrollada con **Angular**
-- 📱 Una aplicación **mobile** desarrollada con **Java** en **Android Studio**
-Repositorios de los frontends:
-- [Frontend Mobile](https://github.com/G10-ISPC/Frontend-Mobile)
+
+# RICCO BURGER - API Backend
+
+## Descripción General
+
+La API Backend de RICCO BURGER es un servicio RESTful robusto construido con Django REST Framework. Este sistema gestiona la lógica de negocio y operaciones de datos para la plataforma RICCO BURGER, incluyendo gestión de usuarios, catálogo de productos, procesamiento de pedidos y manejo de transacciones.
+
+## Arquitectura del Sistema
+
+La API funciona como infraestructura backend para dos aplicaciones cliente:
+
+- **Aplicación Web**: Desarrollada con framework Angular
+- **Aplicación Móvil**: Desarrollada en Java para plataformas Android
+
+### Repositorios Relacionados
+
 - [Frontend Web](https://github.com/G10-ISPC/Frontend-Web)
-## 🚀 Tecnologías utilizadas
-- **Python 3**
-- **Django 4+**
-- **Django REST Framework**
-- **MySQL**
-- **JWT (Autenticación)**
-- **Django Token Auth**
-- **CORS**
-- **CoreAPI**
-- **SimpleJWT**
-## 📝 Licencia
-Este proyecto es de uso **libre para fines educativos y de aprendizaje**.  
-## 🙌 Equipo de desarrollo
-Este proyecto fue desarrollado por estudiantes del ISPC:
-- Carla Elizabeth Arévalo  
-- Micaela Inés Juarez Manescotto  
-- Delfina Aricoma  
-- Ernesto Agustín Cevasco  
-- Mariana Cos  
-- Laura Patricia Cruz   
-- Melisa Gulle  
-- Dalma Florencia del Valle Ponce
+- [Frontend Móvil](https://github.com/G10-ISPC/Frontend-Mobile)
+
+## Stack Tecnológico
+
+### Tecnologías Principales
+- Python
+- Django REST Framework
+- Base de Datos MySQL
+- Autenticación JWT
+
+### Características Principales
+- Arquitectura API RESTful
+- Autenticación y autorización segura
+- Validación integral de datos
+- Diseño de base de datos escalable
+
+## Licencia
+
+Este proyecto está licenciado para fines educativos y de aprendizaje. Todos los derechos reservados.
+
+## Equipo de Desarrollo
+
+Desarrollado por estudiantes del ISPC:
+
+| Nombre | Rol |
+|--------|-----|
+| Ernesto Agustín Cevasco | Scrum Master |
+| Carla Elizabeth Arévalo | Desarrollador/a |
+| Micaela Inés Juarez Manescotto | Desarrollador/a |
+| Delfina Aricoma | Desarrollador/a |
+| Mariana Cos | Desarrollador/a |
+| Laura Patricia Cruz | Desarrollador/a |
+| Melisa Gulle | Desarrollador/a |
+| Dalma Florencia del Valle Ponce | Desarrollador/a |
+
+
+## Espacios Curriculares y Profesores
+
+| Nombre de Módulo | Nombre del Profesor/a |
+|--------|-----|
+| Práctica Profecionalizante | Viviana Andrea Guillen |
+| Emprendedurismo | Yamil Eloy Salomón |
+| Tecnología y Desarrollo | Daniel Meloni |

@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 
-from .models import CustomUser, Localidad, Barrio,Rol, Producto, Direccion,Compra,Detalle,Permiso,Rol_Permiso,Pedido
+from .models import CustomUser, Rol, Producto, Direccion,Compra,Detalle,Permiso,Rol_Permiso,Pedido
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -39,17 +39,18 @@ class PerfilUsuarioSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
-class LocalidadSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Localidad
-        fields = '__all__'
+    
+# class LocalidadSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Localidad
+#         fields = '__all__'
 
-class BarrioSerializer(serializers.ModelSerializer):
-    localidad = LocalidadSerializer(required=True)
+# class BarrioSerializer(serializers.ModelSerializer):
+#     localidad = LocalidadSerializer(required=True)
 
-    class Meta:
-        model = Barrio
-        fields = ('nombre_barrio')
+#     class Meta:
+#         model = Barrio
+#         fields = ('nombre_barrio')
 
 class DireccionSerializer(serializers.ModelSerializer):
 
@@ -67,38 +68,35 @@ class RegistroSerializers(serializers.ModelSerializer):
         validators=[UniqueValidator(queryset=CustomUser.objects.all())]
     )
     password = serializers.CharField(
-        write_only=True, required=True, validators=[validate_password])
+        write_only=True, required=True, validators=[validate_password]
+    )
     password2 = serializers.CharField(write_only=True, required=True)
-    direccion = DireccionSerializer(required=True)
+   
 
     class Meta:
         model = CustomUser
-        fields = ('password', 'password2', 'email',
-                  'first_name', 'last_name', 'telefono', 'direccion', 'is_staff')
+        fields = (
+            'password', 'password2', 'email',
+            'first_name', 'last_name', 'telefono', 'is_staff'
+        )
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError(
-                {"password": "Los campos de contraseña no coinciden."})
+                {"password": "Los campos de contraseña no coinciden."}
+            )
         return attrs
 
-    def create(self, validated_data):
-        direccion_data = validated_data.pop('direccion')
-       
-        direccion_instance = Direccion.objects.create(**direccion_data)
-
+    def create(self, validated_data):        
         user = get_user_model().objects.create(
-         
             email=validated_data['email'],
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
             telefono=validated_data['telefono'],
-            direccion=direccion_instance,
         )
         user.set_password(validated_data['password'])
         user.save()
         return user
-
 
 class RolSerializer(serializers.ModelSerializer):
     class Meta:
@@ -127,7 +125,23 @@ class CompraSerializer(serializers.ModelSerializer):
     user_last_name = serializers.CharField(source='user.last_name', read_only=True)
     class Meta:
         model = Compra
-        fields = '__all__'       
+        fields = '__all__'    
+    
+    def create(self, validated_data):
+        # Crea la compra
+        compra = Compra.objects.create(**validated_data)
+
+        # Busca los detalles asociados (ya deberían haber sido creados)
+        detalles = Detalle.objects.filter(compra=compra).select_related('producto')
+
+        # Construir descripción
+        descripcion = []
+        for d in detalles:
+            descripcion.append(f"{d.cantidad} {d.producto.nombre_producto}")
+        compra.descripcion = ', '.join(descripcion) if descripcion else 'Compra sin detalles'
+        compra.save()
+
+        return compra     
 
 class MisComprasView(APIView):
     permission_classes = [IsAuthenticated]
@@ -153,6 +167,6 @@ class Rol_PermisoSerializer(serializers.ModelSerializer):
 class PedidoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Pedido
-        fields = '__all__'
+        fields = ['fecha_pedido', 'estado', 'cancelable_hasta', 'user']
 
 

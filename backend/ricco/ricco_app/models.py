@@ -2,33 +2,35 @@ from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.models import User 
+from django.contrib.auth.models import User
+from datetime import timedelta, datetime
+from django.utils import timezone
 
-class Localidad(models.Model):
-    id_localidad = models.AutoField(primary_key=True)
-    nombre_localidad = models.CharField(max_length=50, blank=False, default='')
-    cod_postal = models.IntegerField(blank=False, default=2000)
+# class Localidad(models.Model):
+#     id_localidad = models.AutoField(primary_key=True)
+#     nombre_localidad = models.CharField(max_length=50, blank=False, default='')
+#     cod_postal = models.IntegerField(blank=False, default=2000)
 
-    class Meta:
-        db_table = 'localidad'
-        verbose_name = 'Localidad'
-        verbose_name_plural = 'Localidades'
+#     class Meta:
+#         db_table = 'localidad'
+#         verbose_name = 'Localidad'
+#         verbose_name_plural = 'Localidades'
 
-    def __str__(self):
-        return str(self.id_localidad)
+#     def __str__(self):
+#         return str(self.id_localidad)
 
-class Barrio(models.Model):
-    id_barrio = models.AutoField(primary_key=True)
-    nombre_barrio = models.CharField(max_length=50, blank=False, default='')
-    localidad = models.ForeignKey(Localidad, to_field='id_localidad', on_delete=models.SET_NULL, null=True, blank=True, related_name="barrio")
+# class Barrio(models.Model):
+#     id_barrio = models.AutoField(primary_key=True)
+#     nombre_barrio = models.CharField(max_length=50, blank=False, default='')
+#     localidad = models.ForeignKey(Localidad, to_field='id_localidad', on_delete=models.SET_NULL, null=True, blank=True, related_name="barrio")
 
-    class Meta:
-        db_table = 'barrio'
-        verbose_name = 'Barrio'
-        verbose_name_plural = 'Barrios'
+#     class Meta:
+#         db_table = 'barrio'
+#         verbose_name = 'Barrio'
+#         verbose_name_plural = 'Barrios'
 
-    def __str__(self):
-        return str(self.id_barrio)
+#     def __str__(self):
+#         return str(self.id_barrio)
 
 class Rol(models.Model):
     id_rol = models.AutoField(primary_key=True)
@@ -62,7 +64,7 @@ class Direccion(models.Model):
     id_direccion = models.AutoField(primary_key=True)
     calle = models.CharField(max_length=100, blank=False, default='')
     numero = models.DecimalField(max_digits=10, decimal_places=2, blank=False, default=0.0)
-    barrio = models.ForeignKey(Barrio, to_field='id_barrio', on_delete=models.SET_NULL, null=True, blank=True, related_name="direccion")
+    # barrio = models.ForeignKey(Barrio, to_field='id_barrio', on_delete=models.SET_NULL, null=True, blank=True, related_name="direccion")
 
     class Meta:
         db_table = 'direccion'
@@ -114,11 +116,24 @@ class CustomUser(AbstractUser):
         return self.email
 
 class Compra(models.Model):
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('preparacion', 'En preparación'),
+        ('cancelado', 'Cancelado'),
+    ]
+    
     id_compra = models.AutoField(primary_key=True)
-    fecha = models.DateField(auto_now_add=True)
+    fecha = models.DateTimeField(auto_now_add=True)
     descripcion = models.TextField(max_length=1000, blank=False, default='')
     precio_total = models.DecimalField(max_digits=10, decimal_places=2, blank=False, default=0.0)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="compras")
+    estado = models.CharField(max_length=50, default="pendiente")
+    cancelable_hasta = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.cancelable_hasta:
+            self.cancelable_hasta = timezone.now() + timedelta(minutes=1)
+        super().save(*args, **kwargs) 
 
     class Meta:
         db_table = 'compra'
@@ -171,9 +186,21 @@ class Rol_Permiso(models.Model):
 
 class Pedido(models.Model):
     id_pedido = models.AutoField(primary_key=True)
-    fecha_pedido = models.DateField(auto_now_add=True)
+    fecha_pedido = models.DateTimeField(auto_now_add=True)
     estado = models.CharField(max_length=50, blank=False, default='')
+    cancelable_hasta = models.DateTimeField(null=True, blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, blank=True, null=True, related_name="pedido")
+    
+    def save(self, *args, **kwargs):
+        # Asegúrate de que fecha_pedido no sea None (aunque auto_now_add debería manejar esto)
+        if not self.fecha_pedido:
+            self.fecha_pedido = timezone.now()  # Asignamos la fecha y hora actual si no está establecida
+        
+        # Si cancelable_hasta no está establecido, asignamos un valor por defecto de 5 minutos a partir de fecha_pedido
+        if not self.cancelable_hasta:
+            self.cancelable_hasta = self.fecha_pedido + timedelta(minutes=2)  # Tiempo límite de cancelación
+        
+        super().save(*args, **kwargs)
 
     class Meta:
         db_table = 'pedido'
@@ -182,5 +209,4 @@ class Pedido(models.Model):
 
     def __str__(self):
         return str(self.id_pedido)
-
                                     

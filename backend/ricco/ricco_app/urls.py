@@ -2,13 +2,11 @@ from django.urls import path, include
 from rest_framework import routers
 from .views import LoginView, LogoutView, RegistroView
 from ricco_app import views
-from .views import MisComprasView, TodasComprasView, AdminView, PerfilUsuarioView
+from .views import MisComprasView, TodasComprasView, AdminView, PerfilUsuarioView, crear_pagos_view, CancelarPedidoView
 from django.conf.urls.static import static
 from django.conf import settings
 
 router= routers.DefaultRouter()
-router.register(r'localidad',views.LocalidadViewSet)
-router.register(r'barrio',views.BarrioViewSet)
 router.register(r'rol',views.RolViewSet)
 router.register(r'producto',views.ProductoViewSet)
 router.register(r'direccion',views.DireccionViewSet)
@@ -30,7 +28,9 @@ urlpatterns = [
     path('todas-compras/', TodasComprasView.as_view(), name='todas_compras'), 
     path('admin/', AdminView.as_view(), name='admin'), 
     path('perfilUsuario/', PerfilUsuarioView.as_view(), name='perfilUsuario'),
-      
+    path('crear-pago/', views.crear_pagos_view, name='crear_pago'),  
+    path('cancelar-compra/<int:id_compra>/', CancelarPedidoView.as_view(), name='cancelar_compra'),
+    path('actualizar-compras/', views.ActualizarComprasView.as_view(), name='actualizar_compras'),
     path('', include(router.urls)),
 ]
 
