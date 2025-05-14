@@ -2,7 +2,7 @@
 
 ## Descripción General
 
-La API Backend de RICCO BURGER es un servicio RESTful robusto construido con Django y Django REST Framework. Este sistema gestiona la lógica de negocio y operaciones de datos para la plataforma RICCO BURGER, incluyendo gestión de usuarios, catálogo de productos, procesamiento de pedidos y manejo de transacciones.
+La API Backend de RICCO BURGER es un servicio RESTful robusto construido con Django REST Framework. Este sistema gestiona la lógica de negocio y operaciones de datos para la plataforma RICCO BURGER, incluyendo gestión de usuarios, catálogo de productos, procesamiento de pedidos y manejo de transacciones.
 
 ## Arquitectura del Sistema
 
@@ -40,11 +40,20 @@ Desarrollado por estudiantes del ISPC:
 
 | Nombre | Rol |
 |--------|-----|
+| Ernesto Agustín Cevasco | Scrum Master |
 | Carla Elizabeth Arévalo | Desarrollador/a |
 | Micaela Inés Juarez Manescotto | Desarrollador/a |
 | Delfina Aricoma | Desarrollador/a |
-| Ernesto Agustín Cevasco | Desarrollador/a |
 | Mariana Cos | Desarrollador/a |
 | Laura Patricia Cruz | Desarrollador/a |
 | Melisa Gulle | Desarrollador/a |
 | Dalma Florencia del Valle Ponce | Desarrollador/a |
+
+
+## Espacios Curriculares y Profesores
+
+| Nombre de Módulo | Nombre del Profesor/a |
+|--------|-----|
+| Práctica Profecionalizante | Viviana Andrea Guillen |
+| Emprendedurismo | Yamil Eloy Salomón |
+| Tecnología y Desarrollo | Daniel Meloni |
