@@ -327,6 +327,23 @@ class PedidoViewSet(viewsets.ModelViewSet):
         print("Errores al registrar pedido:", serializer.errors)  # Ver errores específicos
         return Response(serializer.errors, status=400)
     
+class PedidoViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    queryset = Pedido.objects.all()
+    serializer_class = PedidoSerializer  
+
+    def create(self, request, *args, **kwargs):
+        print("Datos recibidos:", request.data)  # Ver qué datos están llegando
+        serializer = self.get_serializer(data=request.data)
+
+        if serializer.is_valid():
+            pedido = serializer.save()
+            print("Pedido registrado con éxito:", pedido)
+            return Response(serializer.data, status=201)
+        
+        print("Errores al registrar pedido:", serializer.errors)  
+        return Response(serializer.errors, status=400)
+
 class AdminView(APIView):
     permission_classes = [IsAdminUser]  
 
@@ -339,21 +356,32 @@ def crear_pagos_view(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-
             user = User.objects.get(id=data["user"])
             
-            # Inicializamos campos necesarios
             total = 0
             items = []
             descripcion_items = []
+
+           
+            for detalle_data in data["detalles"]:
+                producto = Producto.objects.get(id_producto=detalle_data["id_producto"])
+                cantidad = int(detalle_data["cantidad"])
+                
+                if producto.stock == 0:
+                    return JsonResponse({"error": f"{producto.nombre_producto} está agotado"}, status=400)
+
+                if producto.stock < cantidad:
+                    return JsonResponse({"error": f"Solo hay {producto.stock} unidades disponibles de {producto.nombre_producto}"}, status=400)
+
             
             compra = Compra.objects.create(
-                descripcion="", #se actualizará luego
+                descripcion="",
                 user=user,
                 fecha=datetime.now(),
                 precio_total=0.0  
             )
 
+            
             for detalle_data in data["detalles"]:
                 producto = Producto.objects.get(id_producto=detalle_data["id_producto"])
                 cantidad = int(detalle_data["cantidad"])
@@ -361,15 +389,19 @@ def crear_pagos_view(request):
                 precio_calculado = cantidad * precio_unitario
                 total += precio_calculado
 
-              
+               
                 Detalle.objects.create(
                     cantidad=cantidad,
                     precio_calculado=precio_calculado,
                     producto=producto,
                     compra=compra
                 )
-                
+
                 descripcion_items.append(f"{cantidad} {producto.nombre_producto}")
+
+                
+                producto.stock -= cantidad
+                producto.save()
 
                 items.append({
                     "title": producto.nombre_producto,
@@ -377,16 +409,19 @@ def crear_pagos_view(request):
                     "unit_price": precio_unitario,
                     "currency_id": "ARS",
                 })
-            # Actualizamos la compra con el total y la descripción generada
+
+            
             compra.precio_total = total
             compra.descripcion = ", ".join(descripcion_items)
             compra.save()
 
+           
             preference_data = {
                 "items": items,
                 "back_urls": {
                     "success": "https://google.com",
-                    "failure": "https://google.com", "pending": "https://google.com",
+                    "failure": "https://google.com", 
+                    "pending": "https://google.com",
                 },
                 "auto_return": "approved",
                 "metadata": {
@@ -396,19 +431,18 @@ def crear_pagos_view(request):
 
             preference_response = sdk.preference().create(preference_data)
             if preference_response["status"] != 201:
-               print("Error de Mercado Pago:", preference_response["response"])
-               return JsonResponse({"error": "Error al generar preferencia de pago", "detalle": preference_response["response"]}, status=500)
+                print("Error de Mercado Pago:", preference_response["response"])
+                return JsonResponse({"error": "Error al generar preferencia de pago", "detalle": preference_response["response"]}, status=500)
 
-            init_point = preference_response["response"]["init_point"]
-
-
-            return JsonResponse({"init_point": init_point}, status=201)
+            return JsonResponse({"init_point": preference_response["response"]["init_point"]}, status=201)
 
         except Exception as e:
             print("Error:", e)
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
+
+
 
 class ActualizarComprasView(APIView):
     permission_classes = [IsAuthenticated]
