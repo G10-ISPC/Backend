@@ -50,6 +50,7 @@ class Producto(models.Model):
     descripcion = models.TextField(blank=False, max_length=255, default='')
     precio = models.DecimalField(max_digits=10, decimal_places=2, blank=False, default=0.0)
     visible = models.BooleanField(default=True)
+    stock = models.IntegerField(default=0)
     main_imagen = models.ImageField(upload_to='products/', null=True, blank=True)
    
     class Meta:
