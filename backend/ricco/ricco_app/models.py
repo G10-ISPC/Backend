@@ -102,6 +102,7 @@ class CustomUser(AbstractUser):
     telefono = models.CharField(max_length=50, blank=False, null=True)
     direccion = models.ForeignKey(Direccion, to_field='id_direccion', on_delete=models.CASCADE, blank=True, null=True, related_name="usuario")
     rol = models.ForeignKey(Rol, to_field='id_rol', on_delete=models.CASCADE, blank=True, null=True, related_name="usuario")
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     objects = CustomUserManager()
 
@@ -115,6 +116,11 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.email
+    
+    def soft_delete(self):
+      self.is_active = False
+      self.deleted_at = timezone.now()
+      self.save()
 
 class Compra(models.Model):
     ESTADO_CHOICES = [
@@ -127,7 +133,7 @@ class Compra(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)
     descripcion = models.TextField(max_length=1000, blank=False, default='')
     precio_total = models.DecimalField(max_digits=10, decimal_places=2, blank=False, default=0.0)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="compras")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="compras")
     estado = models.CharField(max_length=50, default="pendiente")
     cancelable_hasta = models.DateTimeField(null=True, blank=True)
 
