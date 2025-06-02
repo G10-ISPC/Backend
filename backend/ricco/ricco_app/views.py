@@ -30,7 +30,7 @@ from django.utils import timezone
 import logging
 from rest_framework import status
 
-
+from rest_framework.decorators import api_view, permission_classes
 sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
 
 User = get_user_model()
@@ -151,24 +151,43 @@ class LogoutView(APIView):
     
 
 class RegistroView(generics.CreateAPIView):
-    queryset = get_user_model().objects.all()
+    queryset = User.objects.all()
     serializer_class = RegistroSerializers
     permission_classes = [AllowAny]
 
     @csrf_exempt
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        data = request.data
+        email = data.get('email')
 
-        if serializer.is_valid():
-            user = serializer.save()
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key, 'user': serializer.data}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    @csrf_exempt
-    def get(self, request, *args, **kwargs):
-        print(f"GET llamado por: {request.user}")
-        return Response(data={'message': 'GET request processed successfully'}, status=status.HTTP_200_OK)
+        try:
+            user = User.objects.get(email=email)
+            if not user.is_active:
+                # Reactivar y actualizar usuario inactivo
+                user.first_name = data.get('first_name', user.first_name)
+                user.last_name = data.get('last_name', user.last_name)
+                user.telefono = data.get('telefono', user.telefono)
+                if 'password' in data:
+                    user.set_password(data['password'])
+                user.is_active = True
+                user.save()
 
+                token, _ = Token.objects.get_or_create(user=user)
+                serializer = self.serializer_class(user)
+                return Response({'token': token.key, 'user': serializer.data}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'Este correo ya está registrado.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        except User.DoesNotExist:
+            # Crear nuevo usuario normalmente
+            serializer = self.serializer_class(data=data)
+            if serializer.is_valid():
+                user = serializer.save()
+                token, _ = Token.objects.get_or_create(user=user)
+                return Response({'token': token.key, 'user': serializer.data}, status=status.HTTP_201_CREATED)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
 class PerfilUsuarioView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PerfilUsuarioSerializer
     permission_classes = [IsAuthenticated]
@@ -272,6 +291,7 @@ class TodasComprasView(APIView):
         compras = Compra.objects.all()
         print("Compras obtenidas en el backend:")
         for compra in compras:
+            usuario_email = compra.user.email if compra.user else "Usuario eliminado"
             print(f"Compra ID: {compra.id_compra}, Usuario: {compra.user.email}, Total: {compra.precio_total}")  
 
         serializer = CompraSerializer(compras, many=True)
@@ -326,31 +346,13 @@ class PedidoViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=201)
         print("Errores al registrar pedido:", serializer.errors)  # Ver errores específicos
         return Response(serializer.errors, status=400)
-    
-class PedidoViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
-    queryset = Pedido.objects.all()
-    serializer_class = PedidoSerializer  
-
-    def create(self, request, *args, **kwargs):
-        print("Datos recibidos:", request.data)  # Ver qué datos están llegando
-        serializer = self.get_serializer(data=request.data)
-
-        if serializer.is_valid():
-            pedido = serializer.save()
-            print("Pedido registrado con éxito:", pedido)
-            return Response(serializer.data, status=201)
-        
-        print("Errores al registrar pedido:", serializer.errors)  
-        return Response(serializer.errors, status=400)
-
 class AdminView(APIView):
     permission_classes = [IsAdminUser]  
 
     def get(self, request):
         print(f"GET llamado por: {request.user}")
         return Response({"message": "Bienvenido al panel de administración"}, status=status.HTTP_200_OK)    
-
+    
 @csrf_exempt
 def crear_pagos_view(request):
     if request.method == "POST":
@@ -362,18 +364,18 @@ def crear_pagos_view(request):
             items = []
             descripcion_items = []
 
-           
+            # Verificación de stock antes de crear la compra
             for detalle_data in data["detalles"]:
                 producto = Producto.objects.get(id_producto=detalle_data["id_producto"])
                 cantidad = int(detalle_data["cantidad"])
-                
+
                 if producto.stock == 0:
                     return JsonResponse({"error": f"{producto.nombre_producto} está agotado"}, status=400)
 
                 if producto.stock < cantidad:
                     return JsonResponse({"error": f"Solo hay {producto.stock} unidades disponibles de {producto.nombre_producto}"}, status=400)
 
-            
+            # Crear la compra
             compra = Compra.objects.create(
                 descripcion="",
                 user=user,
@@ -381,7 +383,7 @@ def crear_pagos_view(request):
                 precio_total=0.0  
             )
 
-            
+            # Crear detalles y actualizar stock
             for detalle_data in data["detalles"]:
                 producto = Producto.objects.get(id_producto=detalle_data["id_producto"])
                 cantidad = int(detalle_data["cantidad"])
@@ -389,7 +391,6 @@ def crear_pagos_view(request):
                 precio_calculado = cantidad * precio_unitario
                 total += precio_calculado
 
-               
                 Detalle.objects.create(
                     cantidad=cantidad,
                     precio_calculado=precio_calculado,
@@ -397,11 +398,10 @@ def crear_pagos_view(request):
                     compra=compra
                 )
 
-                descripcion_items.append(f"{cantidad} {producto.nombre_producto}")
-
-                
                 producto.stock -= cantidad
                 producto.save()
+
+                descripcion_items.append(f"{cantidad} {producto.nombre_producto}")
 
                 items.append({
                     "title": producto.nombre_producto,
@@ -410,17 +410,15 @@ def crear_pagos_view(request):
                     "currency_id": "ARS",
                 })
 
-            
             compra.precio_total = total
             compra.descripcion = ", ".join(descripcion_items)
             compra.save()
 
-           
             preference_data = {
                 "items": items,
                 "back_urls": {
                     "success": "https://google.com",
-                    "failure": "https://google.com", 
+                    "failure": "https://google.com",
                     "pending": "https://google.com",
                 },
                 "auto_return": "approved",
@@ -442,8 +440,6 @@ def crear_pagos_view(request):
 
     return JsonResponse({"error": "Método no permitido"}, status=405)
 
-
-
 class ActualizarComprasView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -461,5 +457,15 @@ class ActualizarComprasView(APIView):
             "mensaje": f"Se actualizaron {len(compras_actualizadas)} compras.",
             "compras_actualizadas": compras_actualizadas
         })
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def desactivar_cuenta(request):
+    user = request.user
+    user.is_active = False
+    user.deleted_at = timezone.now()
+    user.save()
+
+    return Response({'mensaje': 'Cuenta ha sido eliminada exitosamente.'}, status=200)
+
 
           
