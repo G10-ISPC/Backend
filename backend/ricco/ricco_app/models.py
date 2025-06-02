@@ -139,7 +139,7 @@ class Compra(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.cancelable_hasta:
-            self.cancelable_hasta = timezone.now() + timedelta(minutes=1)
+            self.cancelable_hasta = timezone.now() + timedelta(minutes=3)
         super().save(*args, **kwargs) 
 
     class Meta:
