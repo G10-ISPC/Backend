@@ -9,12 +9,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure--$1@3$_!5!^g#-o#wt#2mh91%mm0e8a5#-4)oyja*jh&6$*^4+'
 
 
-DEBUG = True
+# DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 
-                 'localhost',
-                 '10.0.2.2' 
-                 ]
+# ALLOWED_HOSTS = ['127.0.0.1', 
+#                  'localhost',
+#                  '10.0.2.2' 
+#                  ]
+
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
+ALLOWED_HOSTS = ['*']
+
 CORS_ALLOW_ALL_ORIGINS = True
 
 
@@ -36,6 +40,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -108,7 +113,8 @@ USE_I18N = True
 
 USE_TZ = True
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
