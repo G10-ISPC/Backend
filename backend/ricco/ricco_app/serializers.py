@@ -40,18 +40,6 @@ class PerfilUsuarioSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
     
-# class LocalidadSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Localidad
-#         fields = '__all__'
-
-# class BarrioSerializer(serializers.ModelSerializer):
-#     localidad = LocalidadSerializer(required=True)
-
-#     class Meta:
-#         model = Barrio
-#         fields = ('nombre_barrio')
-
 class DireccionSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -110,7 +98,6 @@ class ProductoSerializer(serializers.ModelSerializer):
         model = Producto
         fields = ['id_producto', 'nombre_producto', 'descripcion', 'precio', 'stock','visible', 'main_imagen']
 
-
 class DetalleSerializer(serializers.ModelSerializer):
     nombre_producto = serializers.CharField(source='producto.nombre_producto', read_only=True)  
 
@@ -146,6 +133,11 @@ class CompraSerializer(serializers.ModelSerializer):
         compra.descripcion = ', '.join(descripcion) if descripcion else 'Compra sin detalles'
         compra.save()
         return compra
+    
+class CompraEstadoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Compra
+        fields = ['estado'] 
 
 class MisComprasView(APIView):
     permission_classes = [IsAuthenticated]

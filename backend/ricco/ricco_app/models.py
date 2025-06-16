@@ -6,31 +6,6 @@ from django.contrib.auth.models import User
 from datetime import timedelta, datetime
 from django.utils import timezone
 
-# class Localidad(models.Model):
-#     id_localidad = models.AutoField(primary_key=True)
-#     nombre_localidad = models.CharField(max_length=50, blank=False, default='')
-#     cod_postal = models.IntegerField(blank=False, default=2000)
-
-#     class Meta:
-#         db_table = 'localidad'
-#         verbose_name = 'Localidad'
-#         verbose_name_plural = 'Localidades'
-
-#     def __str__(self):
-#         return str(self.id_localidad)
-
-# class Barrio(models.Model):
-#     id_barrio = models.AutoField(primary_key=True)
-#     nombre_barrio = models.CharField(max_length=50, blank=False, default='')
-#     localidad = models.ForeignKey(Localidad, to_field='id_localidad', on_delete=models.SET_NULL, null=True, blank=True, related_name="barrio")
-
-#     class Meta:
-#         db_table = 'barrio'
-#         verbose_name = 'Barrio'
-#         verbose_name_plural = 'Barrios'
-
-#     def __str__(self):
-#         return str(self.id_barrio)
 
 class Rol(models.Model):
     id_rol = models.AutoField(primary_key=True)
@@ -64,8 +39,7 @@ class Producto(models.Model):
 class Direccion(models.Model):
     id_direccion = models.AutoField(primary_key=True)
     calle = models.CharField(max_length=100, blank=False, default='')
-    numero = models.DecimalField(max_digits=10, decimal_places=2, blank=False, default=0.0)
-    # barrio = models.ForeignKey(Barrio, to_field='id_barrio', on_delete=models.SET_NULL, null=True, blank=True, related_name="direccion")
+    numero = models.DecimalField(max_digits=10, decimal_places=2, blank=False, default=0.0)    
 
     class Meta:
         db_table = 'direccion'
@@ -84,8 +58,10 @@ class CustomUserManager(BaseUserManager):
         user.set_password(password)
         user.save(using=self._db)
         return user
-
+    
     def create_superuser(self, email, password=None, **extra_fields):
+        from .models import Rol  # ✅ Importa desde el mismo archivo
+
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
 
@@ -94,7 +70,24 @@ class CustomUserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError(_('Superuser must have is_superuser=True.'))
 
-        return self.create_user(email, password=password, **extra_fields)
+        user = self.create_user(email, password=password, **extra_fields)
+
+        rol_admin, _ = Rol.objects.get_or_create(nombre_rol='administrador')
+        user.rol = rol_admin
+        user.save()
+
+        return user
+
+    # def create_superuser(self, email, password=None, **extra_fields):
+    #     extra_fields.setdefault('is_staff', True)
+    #     extra_fields.setdefault('is_superuser', True)
+
+    #     if extra_fields.get('is_staff') is not True:
+    #         raise ValueError(_('Superuser must have is_staff=True.'))
+    #     if extra_fields.get('is_superuser') is not True:
+    #         raise ValueError(_('Superuser must have is_superuser=True.'))
+
+    #     return self.create_user(email, password=password, **extra_fields)
 
 class CustomUser(AbstractUser):
     username = models.CharField(max_length=150, unique=True, blank=True, null=True)
@@ -126,7 +119,9 @@ class Compra(models.Model):
     ESTADO_CHOICES = [
         ('pendiente', 'Pendiente'),
         ('preparacion', 'En preparación'),
+        ('en_camino', 'En camino'),
         ('cancelado', 'Cancelado'),
+        ('entregado', 'Entregado'),
     ]
     
     id_compra = models.AutoField(primary_key=True)
@@ -205,7 +200,7 @@ class Pedido(models.Model):
         
         # Si cancelable_hasta no está establecido, asignamos un valor por defecto de 5 minutos a partir de fecha_pedido
         if not self.cancelable_hasta:
-            self.cancelable_hasta = self.fecha_pedido + timedelta(minutes=2)  # Tiempo límite de cancelación
+            self.cancelable_hasta = self.fecha_pedido + timedelta(minutes=2)  
         
         super().save(*args, **kwargs)
 
