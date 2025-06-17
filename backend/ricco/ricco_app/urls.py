@@ -2,10 +2,10 @@ from django.urls import path, include
 from rest_framework import routers
 from .views import LoginView, LogoutView, RegistroView
 from ricco_app import views
-from .views import MisComprasView, TodasComprasView, AdminView, PerfilUsuarioView, crear_pagos_view, CancelarPedidoView
+from .views import MisComprasView, TodasComprasView, AdminView, PerfilUsuarioView, crear_pagos_view, CancelarPedidoView, desactivar_cuenta, CambiarEstadoCompraAPIView
 from django.conf.urls.static import static
 from django.conf import settings
-from .views import desactivar_cuenta
+
 
 router= routers.DefaultRouter()
 router.register(r'rol',views.RolViewSet)
@@ -33,6 +33,7 @@ urlpatterns = [
     path('cancelar-compra/<int:id_compra>/', CancelarPedidoView.as_view(), name='cancelar_compra'),
     path('actualizar-compras/', views.ActualizarComprasView.as_view(), name='actualizar_compras'),
     path('desactivar-cuenta/', desactivar_cuenta, name='desactivar-cuenta'),
+    path('compra/<int:pk>/cambiar-estado/', CambiarEstadoCompraAPIView.as_view(), name='cambiar_estado_compra'),
     path('', include(router.urls)),
 ]
 

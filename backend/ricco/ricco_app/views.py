@@ -29,6 +29,8 @@ from django.utils.timezone import now
 from django.utils import timezone
 import logging
 from rest_framework import status
+from .permissions import EsAdministradorPorRol
+
 
 from rest_framework.decorators import api_view, permission_classes
 sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
@@ -47,12 +49,9 @@ def bienvenida (request):
     
     <h2>2. Acceso a las API:</h2>
     <p>Para interactuar con las API, puedes acceder a las siguientes rutas:</p>
-    <ul>
-        <li><a href="/api/localidad/">/api/localidad/</a></li>
-        <li><a href="/api/barrio/">/api/barrio/</a></li>
+    <ul>        
         <li><a href="/api/rol/">/api/rol/</a></li>
         <li><a href="/api/producto/">/api/producto/</a></li>
-        <li><a href="/api/direccion/">/api/direccion/</a></li>
     </ul>
     <p>Recuerda que estas rutas corresponden a la API de nuestra aplicación.</p>
     """
@@ -194,14 +193,6 @@ class PerfilUsuarioView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_object(self):
         return self.request.user
-             
-# class LocalidadViewSet(viewsets.ModelViewSet):
-#     queryset=Localidad.objects.all()
-#     serializer_class= LocalidadSerializer
- 
-# class BarrioViewSet(viewsets.ModelViewSet):
-#     queryset=Barrio.objects.all()
-#     serializer_class= BarrioSerializer
  
 class RolViewSet(viewsets.ModelViewSet):
     queryset=Rol.objects.all()
@@ -245,6 +236,28 @@ class CompraViewSet(viewsets.ModelViewSet):
         return compras
 
 
+class CambiarEstadoCompraAPIView(APIView):
+    permission_classes = [EsAdministradorPorRol]  
+
+    def patch(self, request, pk):
+        
+        try:
+            compra = Compra.objects.get(pk=pk)
+        except Compra.DoesNotExist:
+            return Response({'error': 'Compra no encontrada'}, status=status.HTTP_404_NOT_FOUND)
+
+        nuevo_estado = request.data.get('estado')
+        if not nuevo_estado:
+            return Response({'error': 'Debe proporcionar un estado'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if nuevo_estado not in dict(Compra.ESTADO_CHOICES):
+            return Response({'error': 'Estado inválido'}, status=status.HTTP_400_BAD_REQUEST)
+
+        compra.estado = nuevo_estado
+        compra.save()
+
+        return Response({'mensaje': f'Estado actualizado a {nuevo_estado}'}, status=status.HTTP_200_OK)
+    
 class MisComprasView(APIView):
     permission_classes = [IsAuthenticated]
 
