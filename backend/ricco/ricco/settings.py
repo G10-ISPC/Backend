@@ -1,20 +1,27 @@
 from pathlib import Path
 from datetime import timedelta
+from decouple import config, Csv
+
 import os
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-SECRET_KEY = 'django-insecure--$1@3$_!5!^g#-o#wt#2mh91%mm0e8a5#-4)oyja*jh&6$*^4+'
+SECRET_KEY = config('SECRET_KEY')
 
 
-DEBUG = True
+# DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 
-                 'localhost',
-                 '10.0.2.2' 
-                 ]
+# ALLOWED_HOSTS = ['127.0.0.1', 
+#                  'localhost',
+#                  '10.0.2.2' 
+#                  ]
+
+DEBUG = config('DEBUG', default=False, cast=bool)
+
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
+
 CORS_ALLOW_ALL_ORIGINS = True
 
 
@@ -67,19 +74,33 @@ TEMPLATES = [
 WSGI_APPLICATION = 'ricco.wsgi.application'
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'abm_ispc',
+#         'USER': 'root',
+#         'PASSWORD': '1234',
+#         'HOST': 'localhost',
+#         'PORT': '3306',
+#         'OPTIONS': {
+#             'sql_mode': 'traditional',
+#         }
+#     }
+# }
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'abm_ispc',
-        'USER': 'root',
-        'PASSWORD': '1234',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT'),
         'OPTIONS': {
             'sql_mode': 'traditional',
         }
     }
 }
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -167,4 +188,4 @@ AUTHENTICATION_BACKENDS = [
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media' 
-MERCADOPAGO_ACCESS_TOKEN = os.getenv("MERCADOPAGO_ACCESS_TOKEN", "TEST-902554988203207-050217-2c7bab6c62f22c3d4f51093bf311b466-146277237")
+MERCADOPAGO_ACCESS_TOKEN = config("MERCADOPAGO_ACCESS_TOKEN")
