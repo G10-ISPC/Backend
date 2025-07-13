@@ -29,8 +29,10 @@ from django.utils.timezone import now
 from django.utils import timezone
 import logging
 from rest_framework import status
+from .permissions import EsAdministradorPorRol
 
 
+from rest_framework.decorators import api_view, permission_classes
 sdk = mercadopago.SDK(settings.MERCADOPAGO_ACCESS_TOKEN)
 
 User = get_user_model()
@@ -47,12 +49,9 @@ def bienvenida (request):
     
     <h2>2. Acceso a las API:</h2>
     <p>Para interactuar con las API, puedes acceder a las siguientes rutas:</p>
-    <ul>
-        <li><a href="/api/localidad/">/api/localidad/</a></li>
-        <li><a href="/api/barrio/">/api/barrio/</a></li>
+    <ul>        
         <li><a href="/api/rol/">/api/rol/</a></li>
         <li><a href="/api/producto/">/api/producto/</a></li>
-        <li><a href="/api/direccion/">/api/direccion/</a></li>
     </ul>
     <p>Recuerda que estas rutas corresponden a la API de nuestra aplicación.</p>
     """
@@ -151,38 +150,49 @@ class LogoutView(APIView):
     
 
 class RegistroView(generics.CreateAPIView):
-    queryset = get_user_model().objects.all()
+    queryset = User.objects.all()
     serializer_class = RegistroSerializers
     permission_classes = [AllowAny]
 
     @csrf_exempt
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
+        data = request.data
+        email = data.get('email')
 
-        if serializer.is_valid():
-            user = serializer.save()
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key, 'user': serializer.data}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    @csrf_exempt
-    def get(self, request, *args, **kwargs):
-        print(f"GET llamado por: {request.user}")
-        return Response(data={'message': 'GET request processed successfully'}, status=status.HTTP_200_OK)
+        try:
+            user = User.objects.get(email=email)
+            if not user.is_active:
+                # Reactivar y actualizar usuario inactivo
+                user.first_name = data.get('first_name', user.first_name)
+                user.last_name = data.get('last_name', user.last_name)
+                user.telefono = data.get('telefono', user.telefono)
+                if 'password' in data:
+                    user.set_password(data['password'])
+                user.is_active = True
+                user.save()
 
+                token, _ = Token.objects.get_or_create(user=user)
+                serializer = self.serializer_class(user)
+                return Response({'token': token.key, 'user': serializer.data}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': 'Este correo ya está registrado.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        except User.DoesNotExist:
+            # Crear nuevo usuario normalmente
+            serializer = self.serializer_class(data=data)
+            if serializer.is_valid():
+                user = serializer.save()
+                token, _ = Token.objects.get_or_create(user=user)
+                return Response({'token': token.key, 'user': serializer.data}, status=status.HTTP_201_CREATED)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
 class PerfilUsuarioView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PerfilUsuarioSerializer
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
         return self.request.user
-             
-# class LocalidadViewSet(viewsets.ModelViewSet):
-#     queryset=Localidad.objects.all()
-#     serializer_class= LocalidadSerializer
- 
-# class BarrioViewSet(viewsets.ModelViewSet):
-#     queryset=Barrio.objects.all()
-#     serializer_class= BarrioSerializer
  
 class RolViewSet(viewsets.ModelViewSet):
     queryset=Rol.objects.all()
@@ -226,6 +236,28 @@ class CompraViewSet(viewsets.ModelViewSet):
         return compras
 
 
+class CambiarEstadoCompraAPIView(APIView):
+    permission_classes = [EsAdministradorPorRol]  
+
+    def patch(self, request, pk):
+        
+        try:
+            compra = Compra.objects.get(pk=pk)
+        except Compra.DoesNotExist:
+            return Response({'error': 'Compra no encontrada'}, status=status.HTTP_404_NOT_FOUND)
+
+        nuevo_estado = request.data.get('estado')
+        if not nuevo_estado:
+            return Response({'error': 'Debe proporcionar un estado'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if nuevo_estado not in dict(Compra.ESTADO_CHOICES):
+            return Response({'error': 'Estado inválido'}, status=status.HTTP_400_BAD_REQUEST)
+
+        compra.estado = nuevo_estado
+        compra.save()
+
+        return Response({'mensaje': f'Estado actualizado a {nuevo_estado}'}, status=status.HTTP_200_OK)
+    
 class MisComprasView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -272,6 +304,7 @@ class TodasComprasView(APIView):
         compras = Compra.objects.all()
         print("Compras obtenidas en el backend:")
         for compra in compras:
+            usuario_email = compra.user.email if compra.user else "Usuario eliminado"
             print(f"Compra ID: {compra.id_compra}, Usuario: {compra.user.email}, Total: {compra.precio_total}")  
 
         serializer = CompraSerializer(compras, many=True)
@@ -326,34 +359,44 @@ class PedidoViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=201)
         print("Errores al registrar pedido:", serializer.errors)  # Ver errores específicos
         return Response(serializer.errors, status=400)
-    
 class AdminView(APIView):
     permission_classes = [IsAdminUser]  
 
     def get(self, request):
         print(f"GET llamado por: {request.user}")
         return Response({"message": "Bienvenido al panel de administración"}, status=status.HTTP_200_OK)    
-
+    
 @csrf_exempt
 def crear_pagos_view(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-
             user = User.objects.get(id=data["user"])
             
-            # Inicializamos campos necesarios
             total = 0
             items = []
             descripcion_items = []
-            
+
+            # Verificación de stock antes de crear la compra
+            for detalle_data in data["detalles"]:
+                producto = Producto.objects.get(id_producto=detalle_data["id_producto"])
+                cantidad = int(detalle_data["cantidad"])
+
+                if producto.stock == 0:
+                    return JsonResponse({"error": f"{producto.nombre_producto} está agotado"}, status=400)
+
+                if producto.stock < cantidad:
+                    return JsonResponse({"error": f"Solo hay {producto.stock} unidades disponibles de {producto.nombre_producto}"}, status=400)
+
+            # Crear la compra
             compra = Compra.objects.create(
-                descripcion="", #se actualizará luego
+                descripcion="",
                 user=user,
                 fecha=datetime.now(),
                 precio_total=0.0  
             )
 
+            # Crear detalles y actualizar stock
             for detalle_data in data["detalles"]:
                 producto = Producto.objects.get(id_producto=detalle_data["id_producto"])
                 cantidad = int(detalle_data["cantidad"])
@@ -361,14 +404,16 @@ def crear_pagos_view(request):
                 precio_calculado = cantidad * precio_unitario
                 total += precio_calculado
 
-              
                 Detalle.objects.create(
                     cantidad=cantidad,
                     precio_calculado=precio_calculado,
                     producto=producto,
                     compra=compra
                 )
-                
+
+                producto.stock -= cantidad
+                producto.save()
+
                 descripcion_items.append(f"{cantidad} {producto.nombre_producto}")
 
                 items.append({
@@ -377,7 +422,7 @@ def crear_pagos_view(request):
                     "unit_price": precio_unitario,
                     "currency_id": "ARS",
                 })
-            # Actualizamos la compra con el total y la descripción generada
+
             compra.precio_total = total
             compra.descripcion = ", ".join(descripcion_items)
             compra.save()
@@ -386,7 +431,8 @@ def crear_pagos_view(request):
                 "items": items,
                 "back_urls": {
                     "success": "https://google.com",
-                    "failure": "https://google.com", "pending": "https://google.com",
+                    "failure": "https://google.com",
+                    "pending": "https://google.com",
                 },
                 "auto_return": "approved",
                 "metadata": {
@@ -396,13 +442,10 @@ def crear_pagos_view(request):
 
             preference_response = sdk.preference().create(preference_data)
             if preference_response["status"] != 201:
-               print("Error de Mercado Pago:", preference_response["response"])
-               return JsonResponse({"error": "Error al generar preferencia de pago", "detalle": preference_response["response"]}, status=500)
+                print("Error de Mercado Pago:", preference_response["response"])
+                return JsonResponse({"error": "Error al generar preferencia de pago", "detalle": preference_response["response"]}, status=500)
 
-            init_point = preference_response["response"]["init_point"]
-
-
-            return JsonResponse({"init_point": init_point}, status=201)
+            return JsonResponse({"init_point": preference_response["response"]["init_point"]}, status=201)
 
         except Exception as e:
             print("Error:", e)
@@ -427,5 +470,15 @@ class ActualizarComprasView(APIView):
             "mensaje": f"Se actualizaron {len(compras_actualizadas)} compras.",
             "compras_actualizadas": compras_actualizadas
         })
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def desactivar_cuenta(request):
+    user = request.user
+    user.is_active = False
+    user.deleted_at = timezone.now()
+    user.save()
+
+    return Response({'mensaje': 'Cuenta ha sido eliminada exitosamente.'}, status=200)
+
 
           

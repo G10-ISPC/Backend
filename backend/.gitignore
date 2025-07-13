@@ -1,0 +1,24 @@
+# Entornos virtuales
+venv/
+env/
+ENV/
+.venv/
+
+# Archivos sensibles
+.env
+
+# Archivos compilados de Python
+*.pyc
+__pycache__/
+
+
+# Archivos estáticos recolectados
+staticfiles/
+static/
+
+# Carpeta de medios (subidas de usuario)
+media/
+
+# Archivos de migraciones (opcional si los querés excluir de commits iniciales)
+# */migrations/*.py
+# !*/migrations/__init__.py
